@@ -83,9 +83,11 @@
     .creature.struck .ping { animation: strike .95s ease-out }
     @keyframes strike { 0% { r: 17; opacity: .9 } 100% { r: 60; opacity: 0 } }
     .step { animation: fadeUp .45s var(--ease) both }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) }
+                        to { opacity: 1; transform: none } }
     .mark-in { animation: markIn .45s var(--ease) both }
-    @keyframes markIn { from { transform: scaleY(0); opacity: 0 } }
+    @keyframes markIn { from { transform: scaleY(0); opacity: 0 }
+                        to { transform: scaleY(1); opacity: 1 } }
     button, input { transition: background .18s var(--ease), border-color .18s var(--ease),
                     color .18s var(--ease), transform .1s var(--ease) }
     button:active { transform: translateY(1px) }
@@ -224,7 +226,7 @@
   <div class="topbar">
     <b>rocky</b>
     <span class="grow"></span>
-    <button class="iconbtn" id="openSheet" hidden>explore</button>
+    <button class="iconbtn" id="openSheet">explore</button>
   </div>
 
   <main>
@@ -712,8 +714,9 @@ function wireMain() {
   if (ent) ent.addEventListener("keydown", (e) => { if (e.key === "Enter") writeEntry(); });
   const d2 = $("demo2"); if (d2) d2.onclick = loadDemo;
   const wi = $("whatIs"); if (wi) wi.onclick = openSheet;
-  // Nothing to set up before there is a record, so the control is not there yet.
-  $("openSheet").hidden = db.checkins.length === 0;
+  // Always reachable. Hiding it until a record existed left a first visitor with
+  // no way into anything, which is worse than an extra control.
+  $("openSheet").hidden = false;
   const ent2 = $("entry");
   if (ent2 && db.checkins.length === 0 && !reduced) ent2.focus();
   const ts = $("toSetup"); if (ts) ts.onclick = () => { openSheet(); $("written").focus(); };

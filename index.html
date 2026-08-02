@@ -210,6 +210,28 @@
   .named { color: var(--carapace) }
 
   /* ---------- sheet ---------- */
+  /* One calm screen at a time. The sheet used to be a single scroll carrying
+     forms, definitions, limits and evidence all at once, which reads as a wall to
+     anyone who opened it while having a bad week. */
+  .menu { display: flex; flex-direction: column; gap: .4rem; margin-top: 1.1rem }
+  .menu button { text-align: left; background: var(--deck); border: 1px solid var(--line);
+                 padding: .8rem .9rem; cursor: pointer; color: var(--ink) }
+  .menu button:hover { border-color: var(--car-dim) }
+  .menu b { display: block; font-weight: 600; font-size: .95rem }
+  .menu span { display: block; font-size: .82rem; color: var(--dim); margin-top: .12rem }
+  .pane { margin-top: 1.1rem }
+  .pane[hidden] { display: none }
+  @media (prefers-reduced-motion: no-preference) {
+    .menu button { animation: rise .4s var(--ease) both }
+    .menu button:nth-child(2) { animation-delay: .04s }
+    .menu button:nth-child(3) { animation-delay: .08s }
+    .menu button:nth-child(4) { animation-delay: .12s }
+    .menu button:nth-child(5) { animation-delay: .16s }
+    .menu button:nth-child(6) { animation-delay: .20s }
+    .menu button:nth-child(7) { animation-delay: .24s }
+    .pane { animation: fadeUp .35s var(--ease) both }
+  }
+
   .sheet { position: fixed; inset: 0; background: var(--hull); overflow-y: auto;
            z-index: 20; display: none }
   .sheet.open { display: block }
@@ -322,135 +344,146 @@
 <div class="sheet" id="sheet" role="dialog" aria-label="explore">
   <div class="col">
     <div class="topbar">
-      <b>explore</b><span class="grow"></span>
+      <button class="iconbtn" id="back" hidden>back</button>
+      <b id="sheetTitle">explore</b><span class="grow"></span>
       <button class="iconbtn" id="closeSheet">done</button>
     </div>
 
-    <h2>What your clear self decided</h2>
-    <p class="lead">Two halves. The condition, which you pick, and the sentence,
-    which is yours. Kept word for word and handed back when the condition is met.
-    Rocky will not write one for you and will not reword yours.</p>
-    <p class="lead">This shape is not arbitrary. An if-then plan tied to a
-    specific cue is the most studied version of deciding in advance, and the
-    contingent phrasing is part of why it works.</p>
-    <div class="card">
-      <div class="seg" id="seg">
-        <button data-kind="unusual" aria-pressed="true">quiet runs long for me</button>
-        <button data-kind="days" aria-pressed="false">a set number of days</button>
-        <button data-kind="naming" aria-pressed="false">named no one</button>
+    <nav class="menu" id="menu">
+      <button data-pane="help"><b>If you need someone now</b><span>Crisis lines, including India</span></button>
+      <button data-pane="decide"><b>What you decided</b><span>Write one sentence for the days you are not thinking clearly</span></button>
+      <button data-pane="people"><b>People you would tell</b><span>So it can count whether you have named anyone</span></button>
+      <button data-pane="record"><b>Your record</b><span>Export it, or delete all of it</span></button>
+      <button data-pane="words"><b>What the words mean</b><span>Five terms, plainly</span></button>
+      <button data-pane="never"><b>What it will never do</b><span>The list of limits</span></button>
+      <button data-pane="borrow"><b>What this borrows</b><span>Where the ideas come from, and what this is not</span></button>
+      <button data-pane="tested"><b>How it was tested</b><span>The numbers, including what failed</span></button>
+    </nav>
+
+    <section class="pane" id="pane-help" hidden>
+      <p class="lead">rocky is not a crisis service and cannot recognise one. If you
+      are in danger or thinking about harming yourself, please contact a crisis line
+      or your local emergency number.</p>
+      <div class="card">
+        <div class="overflow"><table>
+          <tr><td>India</td><td><strong>14416</strong>, Tele-MANAS, free, 24/7,
+            English and 20 Indian languages</td></tr>
+          <tr><td>US and Canada</td><td><strong>988</strong></td></tr>
+          <tr><td>UK and Ireland</td><td><strong>116 123</strong>, Samaritans</td></tr>
+          <tr><td>Elsewhere</td><td>findahelpline.com</td></tr>
+        </table></div>
       </div>
-      <p class="ifthen"><span id="ifPreview">If the quiet runs 3x longer than my usual, then</span></p>
-      <input id="written" aria-label="the sentence that is yours"
-             placeholder="tell me I said to ring Priya rather than sit with it">
-      <div class="field" style="margin-top:.7rem">
-        <label id="amtLabel" for="amount">how many times my usual gap</label>
-        <input id="amount" type="number" min="2" step="1" value="3">
-        <button class="ghost" id="hold">Hold me to it</button>
+      <p class="note">Shown to everyone, every time. Not because of anything rocky
+      thinks about you.</p>
+    </section>
+
+    <section class="pane" id="pane-decide" hidden>
+      <p class="lead">One sentence, in your words, kept exactly as you write it and
+      handed back when the condition you pick is met. Optional.</p>
+      <div class="card">
+        <div class="seg" id="seg">
+          <button data-kind="unusual" aria-pressed="true">quiet runs long for me</button>
+          <button data-kind="days" aria-pressed="false">a set number of days</button>
+          <button data-kind="naming" aria-pressed="false">named no one</button>
+        </div>
+        <p class="ifthen"><span id="ifPreview">If the quiet runs 3x longer than my usual, then</span></p>
+        <input id="written" aria-label="the sentence that is yours"
+               placeholder="tell me I said to ring Priya rather than sit with it">
+        <div class="field" style="margin-top:.7rem">
+          <label id="amtLabel" for="amount">how many times my usual gap</label>
+          <input id="amount" type="number" min="2" step="1" value="3">
+          <button class="ghost" id="hold">Hold me to it</button>
+        </div>
+        <div id="rules"></div>
       </div>
-      <div id="rules"></div>
-    </div>
+      <p class="note">An if-then plan tied to a specific cue is the most studied way
+      of deciding in advance, which is why it has this shape.</p>
+    </section>
 
-    <h2>People you would tell</h2>
-    <p class="lead">Registering people lets Rocky count whether you have named
-    anyone lately. It records the count only, never which name and never what you
-    said about them.</p>
-    <div class="card">
-      <div class="field">
-        <input id="pname" placeholder="first name" aria-label="name" style="max-width:11rem">
-        <input id="prel" placeholder="who they are to you" aria-label="relationship"
-               style="flex:1;min-width:10rem">
-        <button class="ghost" id="addPerson">Add</button>
+    <section class="pane" id="pane-people" hidden>
+      <p class="lead">It counts how many registered people you named, never which
+      one and never what you said about them.</p>
+      <div class="card">
+        <div class="field">
+          <input id="pname" placeholder="first name" aria-label="name" style="max-width:11rem">
+          <input id="prel" placeholder="who they are to you" aria-label="relationship"
+                 style="flex:1;min-width:10rem">
+          <button class="ghost" id="addPerson">Add</button>
+        </div>
+        <div class="chips" id="people"></div>
       </div>
-      <div class="chips" id="people"></div>
-    </div>
+    </section>
 
-    <h2>Your record</h2>
-    <p class="lead">Kept in this browser, on this device. No account, no server,
-    no sync, no analytics. Clearing browser data deletes it, so export a copy if
-    it matters.</p>
-    <div class="card">
-      <div class="field">
-        <button class="ghost" id="export">Export everything</button>
-        <button class="ghost danger" id="wipe">Delete everything</button>
-        <button class="ghost" id="demo">Load a six week example</button>
+    <section class="pane" id="pane-record" hidden>
+      <p class="lead">Kept in this browser, on this device. No account, no server,
+      no sync, no analytics. Clearing browser data deletes it.</p>
+      <div class="card">
+        <div class="field">
+          <button class="ghost" id="export">Export everything</button>
+          <button class="ghost danger" id="wipe">Delete everything</button>
+          <button class="ghost" id="demo">Load a six week example</button>
+        </div>
+        <p class="note" id="dataNote"></p>
       </div>
-      <p class="note" id="dataNote"></p>
-    </div>
+    </section>
 
-    <h2>What the words mean</h2>
-    <p class="lead">Five terms carry everything here. None is a judgement about you.</p>
-    <dl class="terms">
-      <div><dt>an entry</dt><dd>One line you wrote, and the moment you wrote it.
-        Rocky keeps the line for you to read later. It does not read the line
-        itself.</dd></div>
-      <div><dt>quiet</dt><dd>The time between one entry and the next. Rocky treats
-        quiet as information rather than as missing data, because a long quiet is
-        the thing worth noticing.</dd></div>
-      <div><dt>your usual gap</dt><dd>The average quiet across your own record.
-        Someone who writes twice a day and someone who writes twice a month each
-        have their own usual, and neither is compared to the other.</dd></div>
-      <div><dt>the multiple, written 3.4x</dt><dd>How long the current quiet has
-        run, divided by your usual gap. At 3.4x you have been quiet three and a
-        half times longer than you normally are. It is a ratio and nothing else.
-        It is not a score, a risk level, or a measure of how you are doing.</dd></div>
-      <div><dt>what you decided</dt><dd>A sentence you write in advance, kept word
-        for word, and handed back when the condition you chose is met. Rocky holds
-        the sentence. It does not write one.</dd></div>
-    </dl>
+    <section class="pane" id="pane-words" hidden>
+      <dl class="terms">
+        <div><dt>an entry</dt><dd>One line you wrote, and when. Rocky keeps the line
+          for you. It does not read it.</dd></div>
+        <div><dt>quiet</dt><dd>The time between one entry and the next. Treated as
+          information, not as missing data.</dd></div>
+        <div><dt>your usual gap</dt><dd>The average quiet across your own record.
+          Yours only, never compared to anyone.</dd></div>
+        <div><dt>the multiple, written 3.4x</dt><dd>The current quiet divided by your
+          usual gap. A ratio, not a score, not a risk level, not a measure of how you
+          are doing.</dd></div>
+        <div><dt>what you decided</dt><dd>A sentence you wrote in advance, handed back
+          when your condition is met. Rocky holds it and does not write one.</dd></div>
+      </dl>
+    </section>
 
-    <h2>What it will never do</h2>
-    <p class="lead">Each of these is a way of being confidently wrong about a
-    person, so each is refused in the design rather than in a policy document.
-    This is a list of limits, not a list of features.</p>
-    <ul class="refuse">
-      <li><b>Know how you feel.</b> It has no way to tell, and does not guess.</li>
-      <li><b>Read what you write.</b> Your words are kept for you. The only thing
-        taken from them is a count of how many people you named.</li>
-      <li><b>Compare you to anyone.</b> Not to other founders, not to a norm, not
-        to a population. Nothing here knows what anyone else does.</li>
-      <li><b>Diagnose, score, or rate you.</b></li>
-      <li><b>Detect a crisis.</b> It cannot, and does not try.</li>
-      <li><b>Decide anything you did not decide first.</b></li>
-      <li><b>Send anything anywhere.</b> It has no network access at all.</li>
-      <li><b>Talk to you.</b> It has no voice and no opinions. It hands back your
-        own words at the moment you asked for them, then stops.</li>
-    </ul>
+    <section class="pane" id="pane-never" hidden>
+      <ul class="refuse">
+        <li><b>Know how you feel.</b> No way to tell, and it does not guess.</li>
+        <li><b>Read what you write.</b> Only a count of how many people you named.</li>
+        <li><b>Compare you to anyone.</b> Nothing here knows what anyone else does.</li>
+        <li><b>Diagnose, score, or rate you.</b></li>
+        <li><b>Detect a crisis.</b> It cannot, and does not try.</li>
+        <li><b>Decide anything you did not decide first.</b></li>
+        <li><b>Send anything anywhere.</b> No network access at all.</li>
+        <li><b>Talk to you.</b> No voice, no opinions. It hands back your own words
+          and stops.</li>
+      </ul>
+      <p class="note">A list of limits, not of features.</p>
+    </section>
 
-    <h2>What this borrows, and what it is not</h2>
-    <p class="lead">None of the ideas here are original. Three bodies of work are
-    worth knowing about, both for what they support and for where they stop.</p>
-    <ul class="refuse">
-      <li><b>Deciding in advance, in if-then form.</b> Linking a specific cue to a
-        specific response is the most studied version of this. A meta-analysis of
-        94 tests found a medium to large effect on whether the intended thing
-        actually happens, and a 2024 analysis across 642 tests found effects across
-        cognitive, affective and behavioural outcomes. Two things made the effect
-        larger: contingent if-then phrasing, and rehearsing the plan. That is why
-        the sentence here is shaped as a condition and a response, and why it is
-        shown back to you on ordinary days rather than only on hard ones.</li>
-      <li><b>Naming people in advance.</b> Deciding who to contact before you need
-        to is one component of safety planning, an approach with solid evidence in
-        clinical suicide prevention. <b>Rocky is not a safety plan and its evidence
-        does not transfer here.</b> A real safety plan is made with a clinician,
-        covers warning signs, coping steps and access to means, and is for people
-        at risk. Rocky does none of that and cannot detect risk at all. If a safety
-        plan is what you need, ask a clinician for one rather than using this.</li>
-      <li><b>Writing things down.</b> Writing about experiences that matter has
-        been studied for decades with small to moderate benefits. Those studies use
-        long sessions of reflective writing. A one line entry here is not that, so
-        treat the record as a record and not as a treatment.</li>
-    </ul>
-    <p class="lead" style="margin-top:.9rem">Rocky has not been studied. What is
-    described above is evidence for the ideas it borrows, which is a different
-    claim, and a weaker one.</p>
+    <section class="pane" id="pane-borrow" hidden>
+      <p class="lead">None of the ideas here are original. Three are worth knowing,
+      for what they support and where they stop.</p>
+      <ul class="refuse">
+        <li><b>Deciding in advance, in if-then form.</b> Well studied, with a medium
+          to large effect on whether the intended thing happens. Effects were larger
+          with if-then phrasing and with rehearsal, which is why the sentence has this
+          shape and is shown back on ordinary days.</li>
+        <li><b>Naming people in advance.</b> One component of safety planning, which
+          has solid clinical evidence. <b>Rocky is not a safety plan and that evidence
+          does not transfer.</b> A safety plan is made with a clinician and covers
+          warning signs and access to means. If that is what you need, ask a clinician
+          for one rather than using this.</li>
+        <li><b>Writing things down.</b> Studied for decades, small to moderate
+          benefits, using long reflective sessions. A one line entry is not that, so
+          treat this as a record and not as a treatment.</li>
+      </ul>
+      <p class="note">Rocky has not been studied. The above is evidence for the ideas
+      it borrows, which is a weaker claim.</p>
+    </section>
 
-    <details>
-      <summary>Why one number, and what was tested and rejected</summary>
-      <p class="lead" style="margin-top:.8rem">Five methods were built and tested
-      on simulated records, scored causally, each compared against firing at
-      random at the same volume. Precision is how often an alert landed inside a
-      genuinely hard stretch. The numbers are reported as they came out.</p>
-      <div class="overflow"><table>
+    <section class="pane" id="pane-tested" hidden>
+      <p class="lead">Five methods on simulated records, scored causally, each
+      compared against firing at random at the same volume. Precision is how often
+      an alert landed inside a genuinely hard stretch.</p>
+      <div class="card"><div class="overflow"><table>
         <tr><th>Method</th><th class="n">Precision</th><th class="n">Random, same volume</th></tr>
         <tr><td>Quiet divided by your usual gap</td><td class="n won">37%</td><td class="n">24%</td></tr>
         <tr><td>Departure score against your baseline</td><td class="n">26%</td><td class="n">25%</td></tr>
@@ -458,21 +491,14 @@
         <tr><td>Trajectory plus word count and naming</td><td class="n">39%</td><td class="n">26%</td></tr>
         <tr><td>Entropy calibrated thresholds</td><td class="n">36%</td><td class="n">24%</td></tr>
         <tr><td>A fixed eleven day rule</td><td class="n">19%</td><td class="n">21%</td></tr>
-      </table></div>
-      <p class="lead" style="margin-top:.7rem">The simplest method has the highest
-      precision in that table. The four more elaborate ones added nothing
-      measurable over it, so none of them is in this page. The fixed eleven day
-      rule scored below chance. All of it is simulated people rather than real
-      ones, which limits what any of it shows.</p>
-      <p class="lead">Two questions remain open. Whether a reminder to tell someone
-      makes a person more likely to tell them, or quietly satisfies the urge
-      instead. And that the moment Rocky sounds, it changes what it was listening
-      to. Both need a study rather than more code, and neither has been run.</p>
-      <p class="lead">One limit of this page: a browser cannot watch while it is
-      closed. It notices the quiet when you next open it. The command line version
-      installs a scheduled check that runs while you are away, which is the version
-      that reads an absence properly.</p>
-    </details>
+      </table></div></div>
+      <details>
+        <summary>Two limits worth knowing</summary>
+        <p class="note">These are simulated people rather than real ones, which
+        limits what any of it shows. And a browser cannot watch while it is closed,
+        so it notices a quiet stretch when you next open it.</p>
+      </details>
+    </section>
 
     <div style="height:2rem"></div>
   </div>
@@ -816,7 +842,8 @@ function wireMain() {
   const ent2 = $("entry");
   const touch = matchMedia("(hover: none)").matches;
   if (ent2 && db.checkins.length === 0 && !reduced && !touch) ent2.focus();
-  const ts = $("toSetup"); if (ts) ts.onclick = () => { openSheet(); $("written").focus(); };
+  const ts = $("toSetup");
+  if (ts) ts.onclick = () => { openSheet(); showPane("decide"); $("written").focus(); };
   document.querySelectorAll("[data-ack]").forEach((b) => b.onclick = () => {
     const c = sorted();
     db.acked[b.dataset.ack] = c.length ? c[c.length-1].at + 1 : Date.now();
@@ -824,7 +851,37 @@ function wireMain() {
   });
 }
 
-const openSheet = () => { $("sheet").classList.add("open"); document.body.style.overflow = "hidden"; };
+const PANE_TITLES = {
+  help: "if you need someone now", decide: "what you decided",
+  people: "people you would tell", record: "your record",
+  words: "what the words mean", never: "what it will never do",
+  borrow: "what this borrows", tested: "how it was tested",
+};
+
+function showMenu() {
+  $("menu").hidden = false;
+  $("back").hidden = true;
+  $("sheetTitle").textContent = "explore";
+  Object.keys(PANE_TITLES).forEach((k) => { $("pane-" + k).hidden = true; });
+}
+
+function showPane(name) {
+  $("menu").hidden = true;
+  $("back").hidden = false;
+  $("sheetTitle").textContent = PANE_TITLES[name] || "explore";
+  Object.keys(PANE_TITLES).forEach((k) => { $("pane-" + k).hidden = k !== name; });
+  if (name === "decide") ifPreview();
+}
+
+$("menu").querySelectorAll("button").forEach((b) =>
+  (b.onclick = () => showPane(b.dataset.pane)));
+$("back").onclick = showMenu;
+
+const openSheet = () => {
+  showMenu();
+  $("sheet").classList.add("open");
+  document.body.style.overflow = "hidden";
+};
 const closeSheet = () => { $("sheet").classList.remove("open"); document.body.style.overflow = ""; };
 $("openSheet").onclick = openSheet;
 $("closeSheet").onclick = closeSheet;

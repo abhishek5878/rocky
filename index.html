@@ -104,6 +104,16 @@
     @keyframes draw { from { opacity: 0 } to { opacity: 1 } }
   }
 
+  .home { background: none; border: none; padding: 0; cursor: pointer; color: var(--ink);
+          font-family: var(--serif); font-size: 1.1rem }
+  .home:hover { color: var(--carapace) }
+  .exit { background: none; border: 1px solid var(--line); color: var(--dim);
+          padding: .34rem .7rem; font-size: .82rem; border-radius: 3px; cursor: pointer }
+  .exit:hover { color: var(--ink); border-color: var(--car-dim) }
+  .primary.big { padding: .85rem 1.9rem; font-size: 1rem; border-radius: 99px }
+  .orjust { text-align: center; font-size: .78rem; color: var(--faint);
+            margin: .85rem 0 .5rem }
+
   .underrocky { display: flex; justify-content: center; margin: .2rem 0 .3rem }
   .explore {
     background: var(--carapace); color: var(--hull); border: 1px solid var(--carapace);
@@ -326,7 +336,7 @@
 
 <div class="col">
   <div class="topbar">
-    <b>rocky</b>
+    <button class="home" id="home">rocky</button>
     <span class="grow"></span>
     <button class="iconbtn" id="theme" title="light, dark, or follow the system">theme</button>
     <button class="iconbtn" id="openSheet">explore</button>
@@ -381,10 +391,10 @@
 <div class="focus" id="focus" role="dialog" aria-label="a timed writing session">
   <div class="fcol">
     <div class="fbar">
+      <button class="exit" id="fleave">&larr; leave</button>
+      <span class="grow"></span>
       <span class="ftime" id="ftime">10:00</span>
       <span class="fwords" id="fwords">0 words</span>
-      <span class="grow"></span>
-      <button class="iconbtn" id="fleave">leave</button>
     </div>
     <div class="fsetup" id="fsetup">
       <p class="say">Write for a while.</p>
@@ -411,9 +421,9 @@
 <div class="sheet" id="sheet" role="dialog" aria-label="explore">
   <div class="col">
     <div class="topbar">
-      <button class="iconbtn" id="back" hidden>back</button>
+      <button class="exit" id="back" hidden>&larr; explore</button>
       <b id="sheetTitle">explore</b><span class="grow"></span>
-      <button class="iconbtn" id="closeSheet">done</button>
+      <button class="exit" id="closeSheet">close</button>
     </div>
 
     <nav class="menu" id="menu">
@@ -759,11 +769,12 @@ function previewPanel() {
     + "theirs normally runs.</p></div>";
 }
 
-const composer = (ph) => '<div class="act"><div class="compose">'
+const composer = (ph) => '<div class="act">'
+  + '<div class="quietrow"><button class="primary big" id="openFocus">Write for a while</button></div>'
+  + '<p class="orjust">or just a line</p>'
+  + '<div class="compose">'
   + '<input id="entry" placeholder="' + (ph || "what happened today?") + '" aria-label="write something">'
-  + '<button class="primary" id="record">Write it</button></div>'
-  + '<div class="quietrow" style="margin-top:.6rem"><button class="ghost" id="openFocus">'
-  + "Write for a while</button></div></div>";
+  + '<button class="ghost" id="record">Keep it</button></div></div>';
 
 // Plans work better when they are rehearsed, not only when they fire. So on
 // ordinary days the sentence is shown back plainly, with no alarm attached.
@@ -1184,6 +1195,12 @@ addEventListener("resize", paintScore);
 addEventListener("keydown", (e) => {
   if (e.key === "Escape" && $("focus").classList.contains("open")) closeFocus();
 });
+$("home").onclick = () => {
+  // One way home from anywhere, so no screen is a place you can get stuck.
+  if ($("focus").classList.contains("open")) { closeFocus(); return; }
+  if ($("sheet").classList.contains("open")) { closeSheet(); return; }
+  showMenu();
+};
 applyTheme();
 render();
 </script>

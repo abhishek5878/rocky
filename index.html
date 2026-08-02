@@ -232,6 +232,42 @@
     .pane { animation: fadeUp .35s var(--ease) both }
   }
 
+  /* A timed session. The only thing on screen is the field and how long is left.
+     Deleting is never blocked: preventing someone from removing their own words
+     during a bad moment would be coercive, and the person stays in charge here. */
+  .focus { position: fixed; inset: 0; background: var(--hull); z-index: 30; display: none }
+  .focus.open { display: block }
+  .fcol { max-width: 40rem; margin: 0 auto; padding: 1rem 1.15rem 2rem; height: 100%;
+          display: flex; flex-direction: column }
+  .fbar { display: flex; align-items: baseline; gap: .8rem; margin-bottom: .8rem }
+  .ftime { font-family: var(--mono); font-variant-numeric: tabular-nums;
+           font-size: 1.5rem; color: var(--carapace); letter-spacing: -.01em }
+  .fwords { font-family: var(--mono); font-size: .72rem; color: var(--faint) }
+  .fbar .grow { flex: 1 }
+  .fsetup { margin: auto 0 }
+  .durations { display: flex; gap: .45rem; justify-content: center; margin-top: 1rem;
+               flex-wrap: wrap }
+  .durations button { background: none; border: 1px solid var(--line); color: var(--dim);
+                      padding: .5rem .95rem; font: inherit; font-size: .87rem;
+                      border-radius: 99px; cursor: pointer }
+  .durations button[aria-pressed="true"] { border-color: var(--carapace);
+                      color: var(--ink); background: var(--deck) }
+  #ftext { flex: 1; width: 100%; min-height: 12rem; resize: none; font: inherit;
+           font-size: 1.05rem; line-height: 1.6; padding: .9rem 1rem;
+           background: var(--deck); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 3px }
+  #ftext:focus { border-color: var(--car-dim); outline: none }
+  .fend { margin-top: 1rem }
+
+  .hist { border-top: 1px solid var(--line); padding: .55rem 0 }
+  .hist:first-child { border-top: none }
+  .hist time { font-family: var(--mono); font-size: .69rem; color: var(--faint);
+               display: block }
+  .hist p { margin: .15rem 0 0; font-size: .89rem }
+  .histgap { font-size: .74rem; color: var(--faint); padding: .3rem 0 .3rem .2rem;
+             font-style: normal }
+  .histgap.long { color: var(--carapace) }
+
   .sheet { position: fixed; inset: 0; background: var(--hull); overflow-y: auto;
            z-index: 20; display: none }
   .sheet.open { display: block }
@@ -292,6 +328,7 @@
   <div class="topbar">
     <b>rocky</b>
     <span class="grow"></span>
+    <button class="iconbtn" id="theme" title="light, dark, or follow the system">theme</button>
     <button class="iconbtn" id="openSheet">explore</button>
   </div>
 
@@ -341,6 +378,36 @@
   </div>
 </div>
 
+<div class="focus" id="focus" role="dialog" aria-label="a timed writing session">
+  <div class="fcol">
+    <div class="fbar">
+      <span class="ftime" id="ftime">10:00</span>
+      <span class="fwords" id="fwords">0 words</span>
+      <span class="grow"></span>
+      <button class="iconbtn" id="fleave">leave</button>
+    </div>
+    <div class="fsetup" id="fsetup">
+      <p class="say">Write for a while.</p>
+      <p class="then">Pick a length. The field is the only thing on screen until
+      you stop. Nothing is saved unless you keep it.</p>
+      <div class="durations" id="durations">
+        <button data-min="5">5 minutes</button>
+        <button data-min="10" aria-pressed="true">10 minutes</button>
+        <button data-min="20">20 minutes</button>
+      </div>
+      <div class="quietrow"><button class="primary" id="fstart">Start</button></div>
+    </div>
+    <textarea id="ftext" hidden aria-label="write"></textarea>
+    <div class="fend" id="fend" hidden>
+      <p class="then" id="fendnote">Time is up.</p>
+      <div class="quietrow">
+        <button class="primary" id="fkeep">Keep it</button>
+        <button class="ghost" id="fdiscard">Discard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet" role="dialog" aria-label="explore">
   <div class="col">
     <div class="topbar">
@@ -353,6 +420,7 @@
       <button data-pane="help"><b>If you need someone now</b><span>Crisis lines, including India</span></button>
       <button data-pane="decide"><b>What you decided</b><span>Write one sentence for the days you are not thinking clearly</span></button>
       <button data-pane="people"><b>People you would tell</b><span>So it can count whether you have named anyone</span></button>
+      <button data-pane="history"><b>Everything you have written</b><span>Your whole record, oldest to newest</span></button>
       <button data-pane="record"><b>Your record</b><span>Export it, or delete all of it</span></button>
       <button data-pane="words"><b>What the words mean</b><span>Five terms, plainly</span></button>
       <button data-pane="never"><b>What it will never do</b><span>The list of limits</span></button>
@@ -414,12 +482,18 @@
       </div>
     </section>
 
+    <section class="pane" id="pane-history" hidden>
+      <p class="lead">All of it, oldest first, with the quiet between entries.</p>
+      <div id="historyList"></div>
+    </section>
+
     <section class="pane" id="pane-record" hidden>
       <p class="lead">Kept in this browser, on this device. No account, no server,
       no sync, no analytics. Clearing browser data deletes it.</p>
       <div class="card">
         <div class="field">
-          <button class="ghost" id="export">Export everything</button>
+          <button class="ghost" id="export">Export as text</button>
+          <button class="ghost" id="exportJson">Export as JSON</button>
           <button class="ghost danger" id="wipe">Delete everything</button>
           <button class="ghost" id="demo">Load a six week example</button>
         </div>
@@ -687,7 +761,9 @@ function previewPanel() {
 
 const composer = (ph) => '<div class="act"><div class="compose">'
   + '<input id="entry" placeholder="' + (ph || "what happened today?") + '" aria-label="write something">'
-  + '<button class="primary" id="record">Write it</button></div></div>';
+  + '<button class="primary" id="record">Write it</button></div>'
+  + '<div class="quietrow" style="margin-top:.6rem"><button class="ghost" id="openFocus">'
+  + "Write for a while</button></div></div>";
 
 // Plans work better when they are rehearsed, not only when they fire. So on
 // ordinary days the sentence is shown back plainly, with no alarm attached.
@@ -813,6 +889,117 @@ function paintSheet() {
   });
 }
 
+/* ---------- theme: follow the system, or choose ---------- */
+const THEMES = ["auto", "light", "dark"];
+function applyTheme() {
+  const mode = db.theme || "auto";
+  const root = document.documentElement;
+  if (mode === "auto") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", mode);
+  const b = $("theme");
+  if (b) b.textContent = mode;
+}
+$("theme").onclick = () => {
+  db.theme = THEMES[(THEMES.indexOf(db.theme || "auto") + 1) % THEMES.length];
+  save(); applyTheme();
+};
+
+/* ---------- a timed session ----------
+   The timer supplies structure, which is the honest half of what a prompt would
+   give. Prompts also supply content, and the words here are the person's own. */
+let fMinutes = 10, fEndsAt = 0, fTick = null;
+
+const mmss = (ms) => {
+  const s = Math.max(0, Math.round(ms / 1000));
+  return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+};
+const countWords = (s) => s.trim() ? s.trim().split(/\s+/).length : 0;
+
+function fPaint() {
+  $("ftime").textContent = fEndsAt ? mmss(fEndsAt - Date.now()) : mmss(fMinutes * 60000);
+  $("fwords").textContent = countWords($("ftext").value) + " words";
+}
+
+function fStop(note) {
+  if (fTick) { clearInterval(fTick); fTick = null; }
+  fEndsAt = 0;
+  $("fend").hidden = false;
+  $("fendnote").textContent = note;
+  fPaint();
+}
+
+function openFocus() {
+  $("focus").classList.add("open");
+  document.body.style.overflow = "hidden";
+  $("fsetup").hidden = false;
+  $("ftext").hidden = true;
+  $("fend").hidden = true;
+  $("ftext").value = "";
+  fEndsAt = 0;
+  fPaint();
+}
+
+function closeFocus() {
+  if (fTick) { clearInterval(fTick); fTick = null; }
+  fEndsAt = 0;
+  $("focus").classList.remove("open");
+  document.body.style.overflow = "";
+  render();
+}
+
+$("durations").querySelectorAll("button").forEach((b) => (b.onclick = () => {
+  fMinutes = parseInt(b.dataset.min, 10);
+  $("durations").querySelectorAll("button").forEach((o) =>
+    o.setAttribute("aria-pressed", String(o === b)));
+  fPaint();
+}));
+
+$("fstart").onclick = () => {
+  $("fsetup").hidden = true;
+  $("ftext").hidden = false;
+  $("ftext").focus();
+  fEndsAt = Date.now() + fMinutes * 60000;
+  fPaint();
+  fTick = setInterval(() => {
+    fPaint();
+    if (Date.now() >= fEndsAt) fStop("Time is up. Keep it or let it go.");
+  }, 500);
+};
+
+$("ftext").addEventListener("input", fPaint);
+$("fleave").onclick = () => {
+  if (fEndsAt && countWords($("ftext").value) > 0) {
+    fStop("Stopped early. Keep it or let it go.");
+    return;
+  }
+  closeFocus();
+};
+$("fkeep").onclick = () => {
+  const words = $("ftext").value.trim();
+  if (words) { db.checkins.push({ at: Date.now(), words }); db.demo = false; save(); }
+  closeFocus();
+};
+$("fdiscard").onclick = closeFocus;
+
+/* ---------- history: all of it, not the last few ---------- */
+function paintHistory() {
+  const c = sorted();
+  const host = $("historyList");
+  if (!host) return;
+  if (!c.length) { host.innerHTML = '<p class="note">Nothing written yet.</p>'; return; }
+  host.innerHTML = c.map((k, i) => {
+    const prev = c[i - 1];
+    const gap = prev
+      ? '<div class="histgap' + ((k.at - prev.at) / H > 24 * 4 ? " long" : "") + '">'
+        + human((k.at - prev.at) / H) + " of quiet</div>"
+      : "";
+    return gap + '<div class="hist"><time>'
+      + new Date(k.at).toLocaleString(undefined, { day: "numeric", month: "short",
+          year: "numeric", hour: "2-digit", minute: "2-digit" })
+      + "</time><p>" + esc(k.words) + "</p></div>";
+  }).join("");
+}
+
 function strike() {
   if (reduced) return;
   const el = $("creature");
@@ -834,6 +1021,7 @@ function wireMain() {
   const d2 = $("demo2"); if (d2) d2.onclick = loadDemo;
   const wi = $("whatIs"); if (wi) wi.onclick = openSheet;
   const em = $("exploreMain"); if (em) em.onclick = openSheet;
+  const of = $("openFocus"); if (of) of.onclick = openFocus;
   // Always reachable. Hiding it until a record existed left a first visitor with
   // no way into anything, which is worse than an extra control.
   $("openSheet").hidden = false;
@@ -871,6 +1059,7 @@ function showPane(name) {
   $("sheetTitle").textContent = PANE_TITLES[name] || "explore";
   Object.keys(PANE_TITLES).forEach((k) => { $("pane-" + k).hidden = k !== name; });
   if (name === "decide") ifPreview();
+  if (name === "history") paintHistory();
 }
 
 $("menu").querySelectorAll("button").forEach((b) =>
@@ -923,12 +1112,21 @@ $("addPerson").onclick = () => {
   $("pname").value = ""; $("prel").value = ""; save(); render();
 };
 
-$("export").onclick = () => {
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+function download(name, text, type) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = "rocky-record.json";
-  a.click(); URL.revokeObjectURL(a.href);
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+$("export").onclick = () => {
+  const lines = sorted().map((k) =>
+    new Date(k.at).toLocaleString() + "\n" + k.words + "\n");
+  download("rocky-record.txt", lines.join("\n"), "text/plain");
 };
+$("exportJson").onclick = () =>
+  download("rocky-record.json", JSON.stringify(db, null, 2), "application/json");
 
 $("wipe").onclick = () => {
   let ok = false;
@@ -983,5 +1181,9 @@ function loadDemo() {
 $("demo").onclick = loadDemo;
 
 addEventListener("resize", paintScore);
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && $("focus").classList.contains("open")) closeFocus();
+});
+applyTheme();
 render();
 </script>

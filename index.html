@@ -102,6 +102,40 @@
     .preview { animation: rise .5s var(--ease) both .26s }
     .preview svg path, .preview svg line { animation: draw 1.1s var(--ease) both .4s }
     @keyframes draw { from { opacity: 0 } to { opacity: 1 } }
+
+    /* The page arrives in order rather than all at once: the creature, then what
+       it is reading, then what you can do about it. */
+    .stage { animation: arrive .7s var(--ease) both }
+    @keyframes arrive { from { opacity: 0; transform: scale(.94) }
+                        to { opacity: 1; transform: none } }
+    .underrocky { animation: rise .5s var(--ease) both .18s }
+
+    /* When your own sentence comes back, the light warms. No words, no alarm. */
+    .creature.recalling .plate-2 { animation: warm 3.4s ease-in-out infinite }
+    .creature.recalling .limb { stroke: var(--ember) }
+    @keyframes warm { 0%,100% { fill: var(--carapace) } 50% { fill: var(--ember) } }
+  }
+
+  /* Ambient drift behind the creature. Slow enough to be atmosphere rather than
+     motion, and gone entirely under reduced-motion. */
+  .drift { position: absolute; inset: -40px; pointer-events: none; overflow: hidden }
+  .drift i { position: absolute; width: 2px; height: 2px; border-radius: 50%;
+             background: var(--carapace); opacity: .18 }
+  .creature.small { width: 46px; height: 46px; margin: 0 auto .7rem; display: block;
+                    opacity: .8 }
+  @media (prefers-reduced-motion: no-preference) {
+    .drift i { animation: drift 26s linear infinite }
+    @keyframes drift {
+      from { transform: translate3d(0, 14px, 0); opacity: 0 }
+      15% { opacity: .22 }
+      85% { opacity: .18 }
+      to { transform: translate3d(6px, -70px, 0); opacity: 0 }
+    }
+    /* While a session runs the breath slows, which is presence rather than
+       instruction. It never speaks and never asks anything. */
+    .focus.running .creature.small { animation: breatheslow 11s var(--ease) infinite }
+    @keyframes breatheslow { 0%,100% { transform: scale(1) } 50% { transform: scale(1.06) } }
+    .focus.running .creature.small .ping { animation: ping 9s ease-out infinite }
   }
 
   .home { background: none; border: none; padding: 0; cursor: pointer; color: var(--ink);
@@ -344,6 +378,7 @@
 
   <main>
     <div class="stage">
+      <div class="drift" id="drift" aria-hidden="true"></div>
       <svg class="creature" id="creature" viewBox="0 0 100 100"
            aria-label="Rocky, layered carapace over five jointed limbs, listening">
         <circle class="ping" cx="50" cy="50" r="19"></circle>
@@ -407,6 +442,18 @@
       </div>
       <div class="quietrow"><button class="primary" id="fstart">Start</button></div>
     </div>
+    <svg class="creature small" id="fcreature" viewBox="0 0 100 100" aria-hidden="true" hidden>
+      <circle class="ping" cx="50" cy="50" r="19"></circle>
+      <circle class="ping" cx="50" cy="50" r="19"></circle>
+      <path class="limb" d="M50 50 L31 35 L19 21"></path>
+      <path class="limb" d="M50 50 L69 35 L82 23"></path>
+      <path class="limb" d="M50 50 L75 55 L88 65"></path>
+      <path class="limb" d="M50 50 L54 74 L59 89"></path>
+      <path class="limb" d="M50 50 L27 62 L13 71"></path>
+      <path class="plate-1" d="M50 31 L66 42.5 L60 61.5 L40 61.5 L34 42.5 Z"></path>
+      <path class="plate-2" d="M50 36 L61.5 44.5 L57.5 58.5 L42.5 58.5 L38.5 44.5 Z"></path>
+      <path class="plate-3" d="M50 41.5 L55 45.5 L53 53 L47 53 L45 45.5 Z"></path>
+    </svg>
     <textarea id="ftext" hidden aria-label="write"></textarea>
     <div class="fend" id="fend" hidden>
       <p class="then" id="fendnote">Time is up.</p>
@@ -803,7 +850,10 @@ function render() {
   // className on an SVG element is a read-only SVGAnimatedString. Assigning to it
   // throws, and this line is the first in render(), so the entire product failed
   // to draw. setAttribute is the form that works for both HTML and SVG.
-  $("creature").setAttribute("class", "creature" + (ph === "recall" ? " big" : ""));
+  $("creature").setAttribute(
+    "class",
+    "creature" + (ph === "recall" ? " big recalling" : ""),
+  );
   let html = '<div class="step">';
 
   if (ph === "empty") {
@@ -939,7 +989,20 @@ function fStop(note) {
   fPaint();
 }
 
+// A dozen slow points. Positions and delays are fixed rather than random so the
+// page looks the same each load and nothing jitters between renders.
+function buildDrift() {
+  const host = $("drift");
+  if (!host || reduced) return;
+  const seeds = [8, 21, 34, 47, 60, 73, 86, 15, 41, 68, 92, 29];
+  host.innerHTML = seeds.map((s, i) =>
+    '<i style="left:' + s + "%;top:" + ((s * 7) % 90) + "%;animation-delay:" +
+    (i * 2.1).toFixed(1) + 's"></i>').join("");
+}
+
 function openFocus() {
+  $("focus").classList.remove("running");
+  $("fcreature").hidden = true;
   $("focus").classList.add("open");
   document.body.style.overflow = "hidden";
   $("fsetup").hidden = false;
@@ -951,6 +1014,7 @@ function openFocus() {
 }
 
 function closeFocus() {
+  $("focus").classList.remove("running");
   if (fTick) { clearInterval(fTick); fTick = null; }
   fEndsAt = 0;
   $("focus").classList.remove("open");
@@ -967,6 +1031,8 @@ $("durations").querySelectorAll("button").forEach((b) => (b.onclick = () => {
 
 $("fstart").onclick = () => {
   $("fsetup").hidden = true;
+  $("fcreature").hidden = false;
+  $("focus").classList.add("running");
   $("ftext").hidden = false;
   $("ftext").focus();
   fEndsAt = Date.now() + fMinutes * 60000;
@@ -1202,5 +1268,6 @@ $("home").onclick = () => {
   showMenu();
 };
 applyTheme();
+buildDrift();
 render();
 </script>

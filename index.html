@@ -687,7 +687,10 @@ const recent = () => {
 
 function render() {
   const ph = phase(), n = db.checkins.length, r = ratio(), host = $("step");
-  $("creature").className = "creature" + (ph === "recall" ? " big" : "");
+  // className on an SVG element is a read-only SVGAnimatedString. Assigning to it
+  // throws, and this line is the first in render(), so the entire product failed
+  // to draw. setAttribute is the form that works for both HTML and SVG.
+  $("creature").setAttribute("class", "creature" + (ph === "recall" ? " big" : ""));
   let html = '<div class="step">';
 
   if (ph === "empty") {

@@ -476,6 +476,7 @@
     <nav class="menu" id="menu">
       <button data-pane="help"><b>If you need someone now</b><span>Crisis lines, including India</span></button>
       <button data-pane="decide"><b>What you decided</b><span>Write one sentence for the days you are not thinking clearly</span></button>
+      <button data-pane="pair"><b>Someone holding you to it</b><span>Pair with a person who cares about you, both ways</span></button>
       <button data-pane="people"><b>People you would tell</b><span>So it can count whether you have named anyone</span></button>
       <button data-pane="history"><b>Everything you have written</b><span>Your whole record, oldest to newest</span></button>
       <button data-pane="record"><b>Your record</b><span>Export it, or delete all of it</span></button>
@@ -525,6 +526,24 @@
       of deciding in advance, which is why it has this shape.</p>
     </section>
 
+    <section class="pane" id="pane-pair" hidden>
+      <p class="lead">One person, both ways. You send them ten to twenty minutes
+      of text or voice each week, and they do the same for you. Rocky holds the
+      promise. The message goes to them, not here.</p>
+      <div class="card">
+        <div id="pairState"></div>
+        <div class="field" style="margin-top:.8rem">
+          <input id="serverUrl" placeholder="server address" aria-label="server address"
+                 style="flex:1;min-width:12rem">
+          <button class="ghost" id="saveServer">Use this server</button>
+        </div>
+        <p class="note">Pairing is optional. With no server set, nothing here ever
+        leaves this device and everything else still works. Once paired, the only
+        thing that travels is whether your weekly message went. Never a word of
+        what you wrote, and never the ratio.</p>
+      </div>
+    </section>
+
     <section class="pane" id="pane-people" hidden>
       <p class="lead">It counts how many registered people you named, never which
       one and never what you said about them.</p>
@@ -545,8 +564,10 @@
     </section>
 
     <section class="pane" id="pane-record" hidden>
-      <p class="lead">Kept in this browser, on this device. No account, no server,
-      no sync, no analytics. Clearing browser data deletes it.</p>
+      <p class="lead">Your entries are kept in this browser, on this device.
+      No analytics, ever. If you pair with someone, a server holds who you are
+      paired with and which weeks were kept, and nothing else. Clearing browser
+      data deletes what is here.</p>
       <div class="card">
         <div class="field">
           <button class="ghost" id="export">Export as text</button>
@@ -582,7 +603,7 @@
         <li><b>Diagnose, score, or rate you.</b></li>
         <li><b>Detect a crisis.</b> It cannot, and does not try.</li>
         <li><b>Decide anything you did not decide first.</b></li>
-        <li><b>Send anything anywhere.</b> No network access at all.</li>
+        <li><b>Send your entries anywhere.</b> What you write stays on this device. If you pair with someone, the only thing that travels is whether your weekly message went, never a word of it and never the ratio.</li>
         <li><b>Talk to you.</b> No voice, no opinions. It hands back your own words
           and stops.</li>
       </ul>
@@ -950,6 +971,53 @@ function paintSheet() {
   });
 }
 
+/* ---------- the only code here that can reach a network ----------------
+   Pairing is opt in. With no server set, this page never makes a request, and
+   the whole product works. Once two people pair, exactly one class of fact
+   travels: whether the weekly message went. Never an entry, never a word, never
+   the ratio.
+
+   The allowlist is the enforcement. callServer refuses to send a key that is not
+   in it, so adding a field to a request is a deliberate act that has to pass this
+   line, and tests/test_web_boundary.py asserts the list's contents. */
+const SHAREABLE = new Set([
+  "account_key", "display_name", "code", "pair_id", "circle_id", "name", "contact",
+]);
+
+function shareable(body) {
+  const out = {};
+  for (const k of Object.keys(body)) {
+    if (!SHAREABLE.has(k)) {
+      throw new Error("refusing to send " + k + ": not a fact about a promise");
+    }
+    out[k] = body[k];
+  }
+  return out;
+}
+
+async function callServer(path, body) {
+  if (!db.server) throw new Error("no server set");
+  const res = await fetch(db.server.replace(/\/$/, "") + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(shareable(body)),
+  });
+  const out = await res.json().catch(() => ({ error: "unreadable reply" }));
+  if (!res.ok) throw new Error(out.error || "refused");
+  return out;
+}
+
+const withKey = (body = {}) => Object.assign({ account_key: db.account_key }, body);
+
+async function refreshShared() {
+  if (!db.server || !db.account_key) { db.shared = null; return; }
+  try { db.shared = await callServer("/state", withKey()); }
+  catch { db.shared = { error: "could not reach the server" }; }
+  save();
+}
+
+const overdueWeeks = (secs) => Math.floor(secs / (7 * 24 * 3600)) + 1;
+
 /* ---------- theme: follow the system, or choose ---------- */
 const THEMES = ["auto", "light", "dark"];
 function applyTheme() {
@@ -1058,6 +1126,110 @@ $("fkeep").onclick = () => {
 };
 $("fdiscard").onclick = closeFocus;
 
+/* ---------- pairing: the surface for a mutual promise ---------- */
+function paintPair() {
+  const host = $("pairState");
+  if (!host) return;
+  const sv = $("serverUrl");
+  if (sv) sv.value = db.server || "";
+
+  if (!db.server) {
+    host.innerHTML = '<p class="note">No server set, so nothing leaves this device. '
+      + "Add one below to pair with someone.</p>";
+    return;
+  }
+  if (!db.account_key) {
+    host.innerHTML = '<div class="field"><input id="myName" placeholder="what should they see you as" '
+      + 'aria-label="your display name" style="flex:1;min-width:11rem">'
+      + '<button class="ghost" id="makeAccount">Create an account</button></div>'
+      + '<p class="note">No email is asked for, because pairing does not need one. '
+      + "You get a key to keep. Losing it loses the account.</p>";
+    wirePair();
+    return;
+  }
+
+  const shared = db.shared || {};
+  if (shared.error) {
+    host.innerHTML = '<p class="note">' + esc(shared.error) + "</p>";
+  }
+  const pairs = shared.pairs || [];
+  let html = pairs.map((p) => {
+    const yours = p.you_last_sent
+      ? "you last sent " + human((Date.now() / 1000 - p.you_last_sent) / 3600)
+        + " ago"
+      : "you have not sent one yet";
+    const theirs = p.they_last_sent
+      ? "they last sent " + human((Date.now() / 1000 - p.they_last_sent) / 3600)
+        + " ago"
+      : "they have not sent one yet";
+    const late = p.you_overdue_seconds > 0
+      ? '<div class="histgap long">your week is '
+        + overdueWeeks(p.you_overdue_seconds) + " past</div>"
+      : "";
+    return '<div class="rule"><span class="said"><b>' + esc(p.with) + "</b><br>"
+      + '<span class="note">' + yours + ". " + theirs + "</span>" + late + "</span>"
+      + '<button class="ghost" data-sent="' + p.pair_id + '">I sent it</button>'
+      + '<button class="ghost" data-endpair="' + p.pair_id + '">End</button></div>';
+  }).join("");
+
+  html += '<div class="field" style="margin-top:.9rem">'
+    + '<button class="ghost" id="makeInvite">Invite someone</button>'
+    + '<input id="pairCode" placeholder="or paste their code" aria-label="invite code" '
+    + 'style="flex:1;min-width:10rem">'
+    + '<button class="ghost" id="acceptInvite">Accept</button></div>'
+    + '<p class="note">Either of you can end a pair alone, at once, without saying '
+    + "why. The shared history goes with it.</p>";
+  host.innerHTML = (shared.error ? host.innerHTML : "") + html;
+  wirePair();
+}
+
+function wirePair() {
+  const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  const fail = (e) => { db.shared = { error: String(e.message || e) }; save(); paintPair(); };
+
+  on("makeAccount", async () => {
+    try {
+      const name = ($("myName").value || "").trim();
+      if (!name) return;
+      const out = await callServer("/account/create", { display_name: name });
+      db.account_key = out.account_key;
+      save();
+      await refreshShared();
+      paintPair();
+    } catch (e) { fail(e); }
+  });
+  on("makeInvite", async () => {
+    try {
+      const out = await callServer("/pair/invite", withKey());
+      $("pairState").insertAdjacentHTML("afterbegin",
+        '<p class="note">Give them this code: <b>' + esc(out.code) + "</b></p>");
+    } catch (e) { fail(e); }
+  });
+  on("acceptInvite", async () => {
+    try {
+      const code = ($("pairCode").value || "").trim();
+      if (!code) return;
+      await callServer("/pair/accept", withKey({ code }));
+      await refreshShared();
+      paintPair();
+    } catch (e) { fail(e); }
+  });
+  document.querySelectorAll("[data-sent]").forEach((b) => (b.onclick = async () => {
+    try {
+      await callServer("/week/sent", withKey({ pair_id: b.dataset.sent }));
+      await refreshShared();
+      paintPair();
+    } catch (e) { fail(e); }
+  }));
+  document.querySelectorAll("[data-endpair]").forEach((b) => (b.onclick = async () => {
+    try {
+      await callServer("/pair/end", withKey({ pair_id: b.dataset.endpair }));
+      await refreshShared();
+      paintPair();
+    } catch (e) { fail(e); }
+  }));
+}
+
 /* ---------- history: all of it, not the last few ---------- */
 function paintHistory() {
   const c = sorted();
@@ -1121,6 +1293,7 @@ const PANE_TITLES = {
   people: "people you would tell", record: "your record",
   words: "what the words mean", never: "what it will never do",
   borrow: "what this borrows", tested: "how it was tested",
+  pair: "someone holding you to it",
 };
 
 function showMenu() {
@@ -1137,6 +1310,7 @@ function showPane(name) {
   Object.keys(PANE_TITLES).forEach((k) => { $("pane-" + k).hidden = k !== name; });
   if (name === "decide") ifPreview();
   if (name === "history") paintHistory();
+  if (name === "pair") paintPair();
 }
 
 $("menu").querySelectorAll("button").forEach((b) =>
@@ -1180,6 +1354,13 @@ $("hold").onclick = () => {
   db.rules.push(kind === "unusual" ? { id, written, kind, multiple: n, active: true }
                                    : { id, written, kind, days: n, active: true });
   $("written").value = ""; save(); render();
+};
+
+$("saveServer").onclick = async () => {
+  db.server = ($("serverUrl").value || "").trim();
+  save();
+  await refreshShared();
+  paintPair();
 };
 
 $("addPerson").onclick = () => {

@@ -478,6 +478,7 @@
       <button data-pane="decide"><b>What you decided</b><span>Write one sentence for the days you are not thinking clearly</span></button>
       <button data-pane="pair"><b>Someone holding you to it</b><span>Pair with a person who cares about you, both ways</span></button>
       <button data-pane="circle"><b>A few people together</b><span>A small group who already know each other</span></button>
+      <button data-pane="executor"><b>If you go quiet</b><span>Have your person told, on the terms you set</span></button>
       <button data-pane="people"><b>People you would tell</b><span>So it can count whether you have named anyone</span></button>
       <button data-pane="history"><b>Everything you have written</b><span>Your whole record, oldest to newest</span></button>
       <button data-pane="record"><b>Your record</b><span>Export it, or delete all of it</span></button>
@@ -542,14 +543,17 @@
         </div>
         <p class="note">Pairing is optional. With no project set, nothing here ever
         leaves this device and everything else still works. Once paired, what
-        travels is whether your weekly message went, and the times you wrote if
-        you switch that on below. Never a word of what you wrote, and never the
-        ratio.</p>
+        travels to them is whether your weekly message went. What is kept on the
+        server is a separate switch below, and it is off until you turn it on.</p>
 
         <div id="syncBox" hidden style="margin-top:1.1rem">
           <label class="note" style="display:flex;gap:.5rem;align-items:flex-start">
             <input type="checkbox" id="syncOn" style="margin-top:.25rem">
-            <span>Keep my history if I lose this device</span>
+            <span>Keep my record, and use it for research</span>
+          </label>
+          <label class="note" style="display:flex;gap:.5rem;align-items:flex-start;margin-top:.5rem">
+            <input type="checkbox" id="usageOn" style="margin-top:.25rem">
+            <span>Record how I use the product. Never what I write.</span>
           </label>
           <p class="note" id="syncWhat"></p>
           <div class="field" style="margin-top:.7rem">
@@ -558,9 +562,12 @@
             <button class="ghost" id="claimBtn">Get it back</button>
           </div>
           <p class="note">Your browser clears this page's storage after a week or
-          two of not opening it, and a lost phone takes it too. With this on, the
-          times you wrote are kept, so a new device knows how long you have gone
-          before. What you wrote stays here and is never sent.</p>
+          two of not opening it, and a lost phone takes it too. With keeping on,
+          your record survives that. It also means what you wrote is on a server
+          that people who operate Rocky can read, and that it is used for research
+          into founder mental health. Before 2026-08-15 nothing you wrote could
+          leave this device at all; that changed, and this is where it says so.
+          Turning either switch off deletes what it covered.</p>
           <div class="field" style="margin-top:.7rem">
             <button class="ghost" id="forgetMe">Delete what is kept there</button>
           </div>
@@ -592,6 +599,26 @@
         function to call and nothing in the database that compares one person to
         another, which is checked by a test rather than promised here.</p>
       </div>
+      </div>
+    </section>
+
+    <section class="pane" id="pane-executor" hidden>
+      <p class="lead">You wrote down when you would want someone told. This is
+      the part that tells them. It sends the same words to everyone, every time,
+      and never anything you wrote.</p>
+      <div class="card">
+        <div id="execState"></div>
+        <p class="note">To be reached yourself, say where. Your pair's Rocky uses
+        this, and nothing else does.</p>
+        <div class="field">
+          <input id="reachAt" placeholder="email or phone" aria-label="where to reach you"
+                 style="flex:1;min-width:11rem">
+          <button class="ghost" id="saveReach">Save</button>
+          <button class="ghost" id="clearReach">Remove</button>
+        </div>
+        <p class="note">What arrives says that you asked to be checked on if you
+        went quiet longer than you decided was alright, and that it has happened.
+        It does not say how you are. Rocky does not know that.</p>
       </div>
     </section>
 
@@ -657,7 +684,7 @@
         <li><b>Diagnose, score, or rate you.</b></li>
         <li><b>Detect a crisis.</b> It cannot, and does not try.</li>
         <li><b>Decide anything you did not decide first.</b></li>
-        <li><b>Send your entries anywhere.</b> What you write stays on this device, under every setting, with no exception. If you pair with someone, whether your weekly message went travels to them. If you switch on keeping your history, the times you wrote travel too, so a new phone knows how long you have gone before. Never a word of what you wrote, and never the ratio.</li>
+        <li><b>Send your entries to the person you paired with.</b> They see whether your weekly message went, and nothing else. What reaches them if your rule fires is a fixed message saying you asked to be checked on, the same for everyone. If you switch on keeping, your record is kept on a server and people who operate Rocky can read it. That is a change from what this said before 2026-08-15, and it is off until you turn it on.</li>
         <li><b>Talk to you.</b> No voice, no opinions. It hands back your own words
           and stops.</li>
       </ul>
@@ -1034,9 +1061,20 @@ function paintSheet() {
    The allowlist is the enforcement. callServer refuses to send a key that is not
    in it, so adding a field to a request is a deliberate act that has to pass this
    line, and tests/test_web_boundary.py asserts the list's contents. */
+/* Until 2026-08-15 this list was the enforcement behind "nothing you write ever
+   leaves this device", and `payload` below is the line where that stopped being
+   true. It is kept, and kept small, because the discipline still earns its place:
+   a field crosses the wire because someone put it here on purpose, and the test
+   in tests/test_web_boundary.py fails if the list changes without the change
+   being noticed. */
 const SHAREABLE = new Set([
   "display_name", "recovery_key", "code", "pair_id", "circle_id", "name", "contact",
-  "at", "refresh_token",
+  "at", "refresh_token", "fires_at", "commitment_id", "kind",
+  // The record itself, and the agreements that allow it to be sent.
+  "payload", "purpose", "notice_version",
+  // Numbers Rocky worked out about a person, which the old law called a claim
+  // about them and refused to send.
+  "ratio", "usual_gap_hours", "open_gap_hours", "named_count", "detail",
 ]);
 
 function shareable(body) {
@@ -1196,7 +1234,7 @@ $("fleave").onclick = () => {
 };
 $("fkeep").onclick = () => {
   const words = $("ftext").value.trim();
-  if (words) { const at = Date.now(); db.checkins.push({ at, words }); db.demo = false; save(); syncCheckin(at); }
+  if (words) { const at = Date.now(); db.checkins.push({ at, words }); db.demo = false; save(); syncCheckin(at); armCommitment(); event("entry_kept"); }
   closeFocus();
 };
 $("fdiscard").onclick = closeFocus;
@@ -1211,6 +1249,7 @@ function paintPair() {
   if (sk) sk.value = (db.sb && db.sb.anon) || "";
   paintSync();
   paintCircles();
+  paintExecutor();
 
   if (!project()) {
     host.innerHTML = '<p class="note">No server set, so nothing leaves this device. '
@@ -1342,6 +1381,7 @@ function writeEntry() {
   const at = Date.now();
   db.checkins.push({ at, words: t });
   syncCheckin(at);
+  armCommitment();
   db.demo = false; save(); render(); strike();
 }
 
@@ -1449,24 +1489,134 @@ function note(msg) {
   if (host) host.insertAdjacentHTML("afterbegin", '<p class="note">' + esc(msg) + "</p>");
 }
 
-/* ---------- keeping the times, and only the times ----------------------
-   Off until someone turns it on. What travels is one timestamp per check-in:
-   when you wrote, never what you wrote. That is not nothing. A column of times
-   is a record of when a person was quiet, held by whoever runs the project, so
-   the page says so in the words above rather than in a policy nobody opens. */
+/* ---------- keeping the record ----------------------------------------
+   Two agreements, never one. Consenting to have your writing kept is not
+   consenting to be measured while you use the product, and a single switch for
+   both is how consent stops meaning anything.
+
+   Both are off until someone turns them on, and turning either off deletes what
+   it covered rather than merely stopping. */
+const NOTICE_VERSION = "2026-08-15";
+
 function paintSync() {
   const box = $("syncBox");
   if (!box) return;
   box.hidden = !project();
-  const on = $("syncOn");
-  if (on) on.checked = !!db.sync;
+  const keep = $("syncOn"), usage = $("usageOn");
+  if (keep) keep.checked = !!db.keep;
+  if (usage) usage.checked = !!db.usage;
   const what = $("syncWhat");
   if (what) {
-    what.textContent = db.sync
-      ? "On. The times you wrote are kept. What you wrote is not."
-      : "Off. Nothing about when you write leaves this device.";
+    what.textContent = db.keep
+      ? "On. What you wrote is kept on the server. People who operate Rocky can "
+        + "read it, and it is used for research into founder mental health."
+      : "Off. Nothing you write leaves this device.";
   }
 }
+
+/* ---------- the executor: the part that reaches a person -----------------
+   The device decides when the rule becomes true and sends only that instant.
+   The server holds a deadline and watches it pass, so it never learns a
+   baseline, never computes a ratio, and never holds anything written here. */
+function nextFiring() {
+  const rule = db.rules.find((r) => r.active);
+  const last = sorted().slice(-1)[0];
+  if (!rule || !last) return null;
+  if (rule.kind === "unusual") {
+    const u = usual();
+    if (u === null || gaps().length < MIN_GAPS) return null;
+    return last.at + u * rule.multiple * H;
+  }
+  if (rule.kind === "days") return last.at + rule.days * DAY;
+  if (rule.kind === "named") {
+    const h = hoursSinceNamed();
+    if (h === null) return null;
+    return Date.now() + (rule.days * 24 - h) * H;
+  }
+  return null;
+}
+
+async function armCommitment() {
+  if (!project() || !db.person_id || !db.exec) return;
+  const pair = ((db.shared && db.shared.pairs) || [])[0];
+  const at = nextFiring();
+  if (!pair || at === null || at <= Date.now()) return;
+  try {
+    db.commitment = await rpc("commitment_arm",
+                              { pair_id: pair.pair_id, fires_at: new Date(at).toISOString() });
+    save();
+  } catch { /* an unarmed commitment must never cost someone their check-in */ }
+}
+
+function paintExecutor() {
+  const host = $("execState");
+  if (!host) return;
+  const reach = $("reachAt");
+  if (reach && db.reach_at !== undefined) reach.value = db.reach_at || "";
+
+  if (!project() || !db.person_id) {
+    host.innerHTML = '<p class="note">This needs a project and a pair. Nothing '
+      + 'here reaches anyone until both exist.</p>';
+    return;
+  }
+  const pair = ((db.shared && db.shared.pairs) || [])[0];
+  if (!pair) {
+    host.innerHTML = '<p class="note">Pair with someone first. Rocky only ever '
+      + 'tells a person you already chose.</p>';
+    return;
+  }
+  const at = nextFiring();
+  const on = !!db.exec;
+  host.innerHTML =
+    '<label class="note" style="display:flex;gap:.5rem;align-items:flex-start">'
+    + '<input type="checkbox" id="execOn"' + (on ? " checked" : "")
+    + ' style="margin-top:.25rem"><span>Tell ' + esc(pair.with)
+    + ' if I go quiet past what I wrote down</span></label>'
+    + '<p class="note">' + (!on ? "Off. Nobody is told anything."
+        : at === null
+          ? "On, but there is no rule it can use yet. Write one, and keep writing "
+            + "for about a week so it has your own rhythm to measure against."
+          : "On. As things stand, " + esc(pair.with) + " would be told after "
+            + new Date(at).toLocaleString() + ". Every time you write, that moves.")
+    + "</p>"
+    + (db.commitment && on
+        ? '<button class="ghost" id="disarm">Cancel it</button>' : "");
+
+  const box = $("execOn");
+  if (box) box.onchange = async (e) => {
+    db.exec = e.target.checked; save();
+    if (db.exec) { await armCommitment(); }
+    else if (db.commitment) {
+      try { await rpc("commitment_cancel", { commitment_id: db.commitment }); } catch {}
+      db.commitment = null; save();
+    }
+    paintExecutor();
+  };
+  const off = $("disarm");
+  if (off) off.onclick = async () => {
+    try { await rpc("commitment_cancel", { commitment_id: db.commitment }); } catch {}
+    db.commitment = null; db.exec = false; save(); paintExecutor();
+  };
+}
+
+$("saveReach") && ($("saveReach").onclick = async () => {
+  const at = ($("reachAt").value || "").trim();
+  if (!at) return;
+  const kind = at.includes("@") ? "email" : "whatsapp";
+  try {
+    await rpc("reachable_set", { at, kind });
+    db.reach_at = at; save();
+    note("Saved. Only a pair of yours can cause anything to be sent here.");
+  } catch (e) { note(String(e.message || e)); }
+});
+
+$("clearReach") && ($("clearReach").onclick = async () => {
+  try {
+    await rpc("reachable_set", { at: "", kind: "email" });
+    db.reach_at = ""; $("reachAt").value = ""; save();
+    note("Removed. Nothing can reach you now.");
+  } catch (e) { note(String(e.message || e)); }
+});
 
 function paintCircles() {
   const box = $("circleBox");
@@ -1524,10 +1674,36 @@ $("joinCircle") && ($("joinCircle").onclick = async () => {
   } catch (e) { note(String(e.message || e)); }
 });
 
+let putTimer = null;
+function syncRecord() {
+  if (!db.keep || !project() || !db.person_id) return;
+  clearTimeout(putTimer);
+  putTimer = setTimeout(async () => {
+    try {
+      await rpc("record_put", {
+        payload: { checkins: db.checkins, rules: db.rules, people: db.people },
+      });
+      const r = ratio(), u = usual();
+      if (r !== null) {
+        await rpc("derived_put", {
+          ratio: r, usual_gap_hours: u, open_gap_hours: openGap(),
+          named_count: db.people.length,
+        });
+      }
+    } catch { /* a record that did not sync is still a record. */ }
+  }, 1200);
+}
+
 async function syncCheckin(at) {
-  if (!db.sync || !project() || !db.person_id) return;
+  if (!db.keep || !project() || !db.person_id) return;
   try { await rpc("check_in_record", { at: new Date(at).toISOString() }); }
   catch { /* a check-in that did not sync is still a check-in. */ }
+  syncRecord();
+}
+
+function event(name, detail) {
+  if (!db.usage || !project() || !db.person_id) return;
+  rpc("usage_record", { name, detail: detail || {} }).catch(() => {});
 }
 
 $("syncOn") && ($("syncOn").onchange = async (e) => {
@@ -1535,13 +1711,33 @@ $("syncOn") && ($("syncOn").onchange = async (e) => {
   try {
     if (on) {
       if (!db.person_id) { e.target.checked = false; note("Give a name first."); return; }
-      db.sync = true; save();
+      await rpc("consent_grant", { purpose: "sync", notice_version: NOTICE_VERSION });
+      db.keep = true; save();
       for (const c of db.checkins) await syncCheckin(c.at);
-      note("On. Your times are kept from now on.");
+      syncRecord();
+      note("On. What you write is kept from now on, and what is already here "
+         + "has been sent.");
     } else {
-      db.sync = false; save();
-      await rpc("check_in_forget");
-      note("Off, and what was kept there is deleted.");
+      db.keep = false; save();
+      await rpc("consent_withdraw", { purpose: "sync" });
+      note("Off, and everything that was kept there is deleted.");
+    }
+  } catch (err) { note(String(err.message || err)); }
+  paintSync();
+});
+
+$("usageOn") && ($("usageOn").onchange = async (e) => {
+  const on = e.target.checked;
+  try {
+    if (on) {
+      if (!db.person_id) { e.target.checked = false; note("Give a name first."); return; }
+      await rpc("consent_grant", { purpose: "product", notice_version: NOTICE_VERSION });
+      db.usage = true; save();
+      note("On. Which screens you open is recorded. Not a word of what you type.");
+    } else {
+      db.usage = false; save();
+      await rpc("consent_withdraw", { purpose: "product" });
+      note("Off, and what was recorded is deleted.");
     }
   } catch (err) { note(String(err.message || err)); }
   paintSync();
@@ -1552,6 +1748,18 @@ $("claimBtn") && ($("claimBtn").onclick = async () => {
   if (!key) return;
   try {
     db.person_id = await rpc("account_claim", { recovery_key: key });
+    try {
+      const whole = await rpc("record_get");
+      if (whole && (whole.checkins || []).length) {
+        db.checkins = whole.checkins.map((c) => ({ at: c.at, words: c.words || "" }));
+        db.rules = whole.rules || db.rules;
+        db.people = whole.people || db.people;
+        db.keep = true; save();
+        note(db.checkins.length + " entries came back, with what you wrote.");
+        await refreshShared(); render(); paintPair();
+        return;
+      }
+    } catch { /* fall through to the times, which is all older accounts have */ }
     const rows = await rpc("check_in_history");
     const known = new Set(db.checkins.map((c) => new Date(c.at).toISOString()));
     let added = 0;

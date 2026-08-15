@@ -477,6 +477,7 @@
       <button data-pane="help"><b>If you need someone now</b><span>Crisis lines, including India</span></button>
       <button data-pane="decide"><b>What you decided</b><span>Write one sentence for the days you are not thinking clearly</span></button>
       <button data-pane="pair"><b>Someone holding you to it</b><span>Pair with a person who cares about you, both ways</span></button>
+      <button data-pane="circle"><b>A few people together</b><span>A small group who already know each other</span></button>
       <button data-pane="people"><b>People you would tell</b><span>So it can count whether you have named anyone</span></button>
       <button data-pane="history"><b>Everything you have written</b><span>Your whole record, oldest to newest</span></button>
       <button data-pane="record"><b>Your record</b><span>Export it, or delete all of it</span></button>
@@ -564,6 +565,33 @@
             <button class="ghost" id="forgetMe">Delete what is kept there</button>
           </div>
         </div>
+
+      </div>
+    </section>
+
+    <section class="pane" id="pane-circle" hidden>
+      <p class="lead">A few people who already know each other. Everyone in one
+      can see who else is in it, and nothing else about them.</p>
+      <div class="card">
+      <div id="circleBox" hidden>
+        <p class="lead" style="margin-bottom:.6rem">A few people who already
+        know each other. Everyone in one can see who else is in it, and nothing
+        else about them.</p>
+        <div id="circleState"></div>
+        <div class="field" style="margin-top:.7rem">
+          <input id="circleName" placeholder="what to call it" aria-label="circle name"
+                 style="flex:1;min-width:10rem">
+          <button class="ghost" id="makeCircle">Start one</button>
+        </div>
+        <div class="field" style="margin-top:.5rem">
+          <input id="circleCode" placeholder="or paste a code you were given"
+                 aria-label="circle code" style="flex:1;min-width:12rem">
+          <button class="ghost" id="joinCircle">Join</button>
+        </div>
+        <p class="note">Rocky never suggests who should be in one. There is no
+        function to call and nothing in the database that compares one person to
+        another, which is checked by a test rather than promised here.</p>
+      </div>
       </div>
     </section>
 
@@ -1182,6 +1210,7 @@ function paintPair() {
   const sk = $("sbKey");
   if (sk) sk.value = (db.sb && db.sb.anon) || "";
   paintSync();
+  paintCircles();
 
   if (!project()) {
     host.innerHTML = '<p class="note">No server set, so nothing leaves this device. '
@@ -1438,6 +1467,62 @@ function paintSync() {
       : "Off. Nothing about when you write leaves this device.";
   }
 }
+
+function paintCircles() {
+  const box = $("circleBox");
+  if (!box) return;
+  box.hidden = !project() || !db.person_id;
+  const host = $("circleState");
+  if (!host) return;
+  const mine = (db.shared && db.shared.circles) || [];
+  if (!mine.length) {
+    host.innerHTML = '<p class="note">You are not in one.</p>';
+    return;
+  }
+  host.innerHTML = mine.map((c) =>
+    '<div class="card" style="margin-bottom:.5rem"><b>' + esc(c.name) + "</b>"
+    + '<p class="note">' + (c.members || []).map(esc).join(", ") + "</p>"
+    + '<button class="ghost" data-circleinvite="' + esc(c.circle_id) + '">Invite someone</button> '
+    + '<button class="ghost" data-circleleave="' + esc(c.circle_id) + '">Leave</button></div>'
+  ).join("");
+  host.querySelectorAll("[data-circleinvite]").forEach((b) => {
+    b.onclick = async () => {
+      try {
+        const code = await rpc("circle_invite_new", { circle_id: b.dataset.circleinvite });
+        note("Give them this code: " + code);
+      } catch (e) { note(String(e.message || e)); }
+    };
+  });
+  host.querySelectorAll("[data-circleleave]").forEach((b) => {
+    b.onclick = async () => {
+      if (!confirmOk("Leave this circle?")) return;
+      try {
+        await rpc("circle_leave", { circle_id: b.dataset.circleleave });
+        await refreshShared(); paintPair();
+      } catch (e) { note(String(e.message || e)); }
+    };
+  });
+}
+
+$("makeCircle") && ($("makeCircle").onclick = async () => {
+  const name = ($("circleName").value || "").trim();
+  if (!name) return;
+  try {
+    await rpc("circle_create", { name });
+    $("circleName").value = "";
+    await refreshShared(); paintPair();
+  } catch (e) { note(String(e.message || e)); }
+});
+
+$("joinCircle") && ($("joinCircle").onclick = async () => {
+  const code = ($("circleCode").value || "").trim();
+  if (!code) return;
+  try {
+    await rpc("circle_join", { code });
+    $("circleCode").value = "";
+    await refreshShared(); paintPair();
+  } catch (e) { note(String(e.message || e)); }
+});
 
 async function syncCheckin(at) {
   if (!db.sync || !project() || !db.person_id) return;

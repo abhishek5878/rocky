@@ -533,14 +533,37 @@
       <div class="card">
         <div id="pairState"></div>
         <div class="field" style="margin-top:.8rem">
-          <input id="serverUrl" placeholder="server address" aria-label="server address"
-                 style="flex:1;min-width:12rem">
-          <button class="ghost" id="saveServer">Use this server</button>
+          <input id="sbUrl" placeholder="project address" aria-label="project address"
+                 style="flex:1;min-width:11rem">
+          <input id="sbKey" placeholder="public key" aria-label="public key"
+                 style="flex:1;min-width:9rem">
+          <button class="ghost" id="saveServer">Use this project</button>
         </div>
-        <p class="note">Pairing is optional. With no server set, nothing here ever
-        leaves this device and everything else still works. Once paired, the only
-        thing that travels is whether your weekly message went. Never a word of
-        what you wrote, and never the ratio.</p>
+        <p class="note">Pairing is optional. With no project set, nothing here ever
+        leaves this device and everything else still works. Once paired, what
+        travels is whether your weekly message went, and the times you wrote if
+        you switch that on below. Never a word of what you wrote, and never the
+        ratio.</p>
+
+        <div id="syncBox" hidden style="margin-top:1.1rem">
+          <label class="note" style="display:flex;gap:.5rem;align-items:flex-start">
+            <input type="checkbox" id="syncOn" style="margin-top:.25rem">
+            <span>Keep my history if I lose this device</span>
+          </label>
+          <p class="note" id="syncWhat"></p>
+          <div class="field" style="margin-top:.7rem">
+            <input id="claimKey" placeholder="paste your key to get a record back"
+                   aria-label="recovery key" style="flex:1;min-width:12rem">
+            <button class="ghost" id="claimBtn">Get it back</button>
+          </div>
+          <p class="note">Your browser clears this page's storage after a week or
+          two of not opening it, and a lost phone takes it too. With this on, the
+          times you wrote are kept, so a new device knows how long you have gone
+          before. What you wrote stays here and is never sent.</p>
+          <div class="field" style="margin-top:.7rem">
+            <button class="ghost" id="forgetMe">Delete what is kept there</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -571,7 +594,10 @@
       <div class="card">
         <div class="field">
           <button class="ghost" id="export">Export as text</button>
-          <button class="ghost" id="exportJson">Export as JSON</button>
+          <button class="ghost" id="exportJson">Save a copy</button>
+          <button class="ghost" id="restore">Restore from a copy</button>
+          <input type="file" id="restoreFile" accept="application/json" hidden
+                 aria-label="a copy of your record">
           <button class="ghost danger" id="wipe">Delete everything</button>
           <button class="ghost" id="demo">Load a six week example</button>
         </div>
@@ -603,7 +629,7 @@
         <li><b>Diagnose, score, or rate you.</b></li>
         <li><b>Detect a crisis.</b> It cannot, and does not try.</li>
         <li><b>Decide anything you did not decide first.</b></li>
-        <li><b>Send your entries anywhere.</b> What you write stays on this device. If you pair with someone, the only thing that travels is whether your weekly message went, never a word of it and never the ratio.</li>
+        <li><b>Send your entries anywhere.</b> What you write stays on this device, under every setting, with no exception. If you pair with someone, whether your weekly message went travels to them. If you switch on keeping your history, the times you wrote travel too, so a new phone knows how long you have gone before. Never a word of what you wrote, and never the ratio.</li>
         <li><b>Talk to you.</b> No voice, no opinions. It hands back your own words
           and stops.</li>
       </ul>
@@ -981,7 +1007,8 @@ function paintSheet() {
    in it, so adding a field to a request is a deliberate act that has to pass this
    line, and tests/test_web_boundary.py asserts the list's contents. */
 const SHAREABLE = new Set([
-  "account_key", "display_name", "code", "pair_id", "circle_id", "name", "contact",
+  "display_name", "recovery_key", "code", "pair_id", "circle_id", "name", "contact",
+  "at", "refresh_token",
 ]);
 
 function shareable(body) {
@@ -995,23 +1022,43 @@ function shareable(body) {
   return out;
 }
 
-async function callServer(path, body) {
-  if (!db.server) throw new Error("no server set");
-  const res = await fetch(db.server.replace(/\/$/, "") + path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(shareable(body)),
+const project = () => (db.sb && db.sb.url && db.sb.anon) ? db.sb : null;
+
+async function callServer(path, body, token) {
+  const sb = project();
+  if (!sb) throw new Error("no project set");
+  const headers = { "Content-Type": "application/json", "apikey": sb.anon };
+  if (token) headers["Authorization"] = "Bearer " + token;
+  const res = await fetch(sb.url.replace(/\/$/, "") + path, {
+    method: "POST", headers, body: JSON.stringify(shareable(body)),
   });
-  const out = await res.json().catch(() => ({ error: "unreadable reply" }));
-  if (!res.ok) throw new Error(out.error || "refused");
+  const out = await res.json().catch(() => ({ message: "unreadable reply" }));
+  if (!res.ok) throw new Error(out.message || out.error_description || "refused");
   return out;
 }
 
-const withKey = (body = {}) => Object.assign({ account_key: db.account_key }, body);
+/* An anonymous session. No email, because an email is personal data the pairing
+   does not need. The session lives in the same storage Safari clears, which is
+   why the recovery key below is not a convenience but the whole point. */
+async function session() {
+  if (db.sb.token && db.sb.expires > Date.now() + 60000) return db.sb.token;
+  const got = db.sb.refresh
+    ? await callServer("/auth/v1/token?grant_type=refresh_token",
+                       { refresh_token: db.sb.refresh })
+    : await callServer("/auth/v1/signup", {});
+  db.sb.token = got.access_token;
+  db.sb.refresh = got.refresh_token;
+  db.sb.expires = Date.now() + (got.expires_in || 3600) * 1000;
+  save();
+  return db.sb.token;
+}
+
+const rpc = async (fn, args = {}) =>
+  callServer("/rest/v1/rpc/" + fn, args, await session());
 
 async function refreshShared() {
-  if (!db.server || !db.account_key) { db.shared = null; return; }
-  try { db.shared = await callServer("/state", withKey()); }
+  if (!project() || !db.person_id) { db.shared = null; return; }
+  try { db.shared = await rpc("state"); }
   catch { db.shared = { error: "could not reach the server" }; }
   save();
 }
@@ -1121,7 +1168,7 @@ $("fleave").onclick = () => {
 };
 $("fkeep").onclick = () => {
   const words = $("ftext").value.trim();
-  if (words) { db.checkins.push({ at: Date.now(), words }); db.demo = false; save(); }
+  if (words) { const at = Date.now(); db.checkins.push({ at, words }); db.demo = false; save(); syncCheckin(at); }
   closeFocus();
 };
 $("fdiscard").onclick = closeFocus;
@@ -1130,15 +1177,18 @@ $("fdiscard").onclick = closeFocus;
 function paintPair() {
   const host = $("pairState");
   if (!host) return;
-  const sv = $("serverUrl");
-  if (sv) sv.value = db.server || "";
+  const sv = $("sbUrl");
+  if (sv) sv.value = (db.sb && db.sb.url) || "";
+  const sk = $("sbKey");
+  if (sk) sk.value = (db.sb && db.sb.anon) || "";
+  paintSync();
 
-  if (!db.server) {
+  if (!project()) {
     host.innerHTML = '<p class="note">No server set, so nothing leaves this device. '
       + "Add one below to pair with someone.</p>";
     return;
   }
-  if (!db.account_key) {
+  if (!db.person_id) {
     host.innerHTML = '<div class="field"><input id="myName" placeholder="what should they see you as" '
       + 'aria-label="your display name" style="flex:1;min-width:11rem">'
       + '<button class="ghost" id="makeAccount">Create an account</button></div>'
@@ -1191,8 +1241,9 @@ function wirePair() {
     try {
       const name = ($("myName").value || "").trim();
       if (!name) return;
-      const out = await callServer("/account/create", { display_name: name });
-      db.account_key = out.account_key;
+      const out = (await rpc("account_create", { display_name: name }))[0];
+      db.person_id = out.person_id;
+      db.recovery_key = out.recovery_key;
       save();
       await refreshShared();
       paintPair();
@@ -1200,7 +1251,7 @@ function wirePair() {
   });
   on("makeInvite", async () => {
     try {
-      const out = await callServer("/pair/invite", withKey());
+      const out = { code: await rpc("pair_invite_new") };
       $("pairState").insertAdjacentHTML("afterbegin",
         '<p class="note">Give them this code: <b>' + esc(out.code) + "</b></p>");
     } catch (e) { fail(e); }
@@ -1209,21 +1260,21 @@ function wirePair() {
     try {
       const code = ($("pairCode").value || "").trim();
       if (!code) return;
-      await callServer("/pair/accept", withKey({ code }));
+      await rpc("pair_accept", { code });
       await refreshShared();
       paintPair();
     } catch (e) { fail(e); }
   });
   document.querySelectorAll("[data-sent]").forEach((b) => (b.onclick = async () => {
     try {
-      await callServer("/week/sent", withKey({ pair_id: b.dataset.sent }));
+      await rpc("week_mark_sent", { pair_id: b.dataset.sent });
       await refreshShared();
       paintPair();
     } catch (e) { fail(e); }
   }));
   document.querySelectorAll("[data-endpair]").forEach((b) => (b.onclick = async () => {
     try {
-      await callServer("/pair/end", withKey({ pair_id: b.dataset.endpair }));
+      await rpc("pair_end", { pair_id: b.dataset.endpair });
       await refreshShared();
       paintPair();
     } catch (e) { fail(e); }
@@ -1259,7 +1310,9 @@ function strike() {
 function writeEntry() {
   const el = $("entry"); if (!el) return;
   const t = el.value.trim(); if (!t) return;
-  db.checkins.push({ at: Date.now(), words: t });
+  const at = Date.now();
+  db.checkins.push({ at, words: t });
+  syncCheckin(at);
   db.demo = false; save(); render(); strike();
 }
 
@@ -1356,8 +1409,99 @@ $("hold").onclick = () => {
   $("written").value = ""; save(); render();
 };
 
+/* A frame that blocks confirm must not trap someone's data, so a blocked
+   dialog means yes for the two actions that delete something of theirs. */
+function confirmOk(msg) {
+  try { return confirm(msg); } catch { return true; }
+}
+
+function note(msg) {
+  const host = $("pairState");
+  if (host) host.insertAdjacentHTML("afterbegin", '<p class="note">' + esc(msg) + "</p>");
+}
+
+/* ---------- keeping the times, and only the times ----------------------
+   Off until someone turns it on. What travels is one timestamp per check-in:
+   when you wrote, never what you wrote. That is not nothing. A column of times
+   is a record of when a person was quiet, held by whoever runs the project, so
+   the page says so in the words above rather than in a policy nobody opens. */
+function paintSync() {
+  const box = $("syncBox");
+  if (!box) return;
+  box.hidden = !project();
+  const on = $("syncOn");
+  if (on) on.checked = !!db.sync;
+  const what = $("syncWhat");
+  if (what) {
+    what.textContent = db.sync
+      ? "On. The times you wrote are kept. What you wrote is not."
+      : "Off. Nothing about when you write leaves this device.";
+  }
+}
+
+async function syncCheckin(at) {
+  if (!db.sync || !project() || !db.person_id) return;
+  try { await rpc("check_in_record", { at: new Date(at).toISOString() }); }
+  catch { /* a check-in that did not sync is still a check-in. */ }
+}
+
+$("syncOn") && ($("syncOn").onchange = async (e) => {
+  const on = e.target.checked;
+  try {
+    if (on) {
+      if (!db.person_id) { e.target.checked = false; note("Give a name first."); return; }
+      db.sync = true; save();
+      for (const c of db.checkins) await syncCheckin(c.at);
+      note("On. Your times are kept from now on.");
+    } else {
+      db.sync = false; save();
+      await rpc("check_in_forget");
+      note("Off, and what was kept there is deleted.");
+    }
+  } catch (err) { note(String(err.message || err)); }
+  paintSync();
+});
+
+$("claimBtn") && ($("claimBtn").onclick = async () => {
+  const key = ($("claimKey").value || "").trim();
+  if (!key) return;
+  try {
+    db.person_id = await rpc("account_claim", { recovery_key: key });
+    const rows = await rpc("check_in_history");
+    const known = new Set(db.checkins.map((c) => new Date(c.at).toISOString()));
+    let added = 0;
+    for (const r of (rows || [])) {
+      const iso = new Date(r.at).toISOString();
+      if (known.has(iso)) continue;
+      db.checkins.push({ at: new Date(iso).getTime(), words: "", recovered: true });
+      added++;
+    }
+    db.checkins.sort((a, b) => a.at - b.at);
+    db.sync = true;
+    save();
+    note(added + (added === 1 ? " time came back." : " times came back.")
+       + " What you wrote was never sent, so it is not here.");
+    await refreshShared(); render(); paintPair();
+  } catch (err) { note(String(err.message || err)); }
+});
+
+$("forgetMe") && ($("forgetMe").onclick = async () => {
+  if (!confirmOk("Delete the account and every time kept there? This page keeps what you wrote.")) return;
+  try {
+    await rpc("account_delete");
+    db.person_id = null; db.recovery_key = null; db.sync = false;
+    db.sb = Object.assign({}, db.sb, { token: null, refresh: null, expires: 0 });
+    db.shared = null; save();
+    note("Deleted. What you wrote is still here.");
+    render(); paintPair();
+  } catch (err) { note(String(err.message || err)); }
+});
+
 $("saveServer").onclick = async () => {
-  db.server = ($("serverUrl").value || "").trim();
+  db.sb = Object.assign({}, db.sb, {
+    url: ($("sbUrl").value || "").trim(),
+    anon: ($("sbKey").value || "").trim(),
+  });
   save();
   await refreshShared();
   paintPair();
@@ -1378,6 +1522,46 @@ function download(name, text, type) {
   URL.revokeObjectURL(a.href);
 }
 
+/* A copy you can actually come back from. The text export is for reading; this
+   is the one that restores, and without it "export" was a way out with no way
+   back, which is the same as no way out at all for anyone whose browser
+   cleared the page while they were having the fortnight this is built for. */
+$("restore").onclick = () => $("restoreFile").click();
+
+$("restoreFile").onchange = (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let copy;
+    try { copy = JSON.parse(String(reader.result)); }
+    catch { $("dataNote").textContent = "That file is not a copy Rocky wrote."; return; }
+    if (!copy || !Array.isArray(copy.checkins)) {
+      $("dataNote").textContent = "That file is not a copy Rocky wrote."; return;
+    }
+    const known = new Set(db.checkins.map((c) => c.at));
+    let added = 0;
+    for (const c of copy.checkins) {
+      if (!c || typeof c.at !== "number" || known.has(c.at)) continue;
+      db.checkins.push({ at: c.at, words: typeof c.words === "string" ? c.words : "" });
+      added++;
+    }
+    for (const person of (copy.people || [])) {
+      if (person && person.name && !db.people.some((q) => q.name === person.name)) {
+        db.people.push(person);
+      }
+    }
+    db.checkins.sort((a, b) => a.at - b.at);
+    db.demo = false;
+    save();
+    $("dataNote").textContent = added + (added === 1 ? " entry" : " entries")
+      + " came back. Anything already here was kept.";
+    render();
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+};
+
 $("export").onclick = () => {
   const lines = sorted().map((k) =>
     new Date(k.at).toLocaleString() + "\n" + k.words + "\n");
@@ -1388,8 +1572,7 @@ $("exportJson").onclick = () =>
 
 $("wipe").onclick = () => {
   let ok = false;
-  try { ok = confirm("This deletes your whole record on this device. There is no undo."); }
-  catch { ok = true; }  // a frame that blocks confirm must not trap someone's data
+  ok = confirmOk("This deletes your whole record on this device. There is no undo.");
   if (!ok) return;
   db = { checkins: [], people: [], rules: [], acked: {}, demo: false, seen: true };
   save(); closeSheet(); render();

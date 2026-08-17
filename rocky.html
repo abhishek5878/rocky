@@ -37,6 +37,17 @@
     --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     --ease: cubic-bezier(.2,.7,.3,1);
+
+    /* The spacing scale, written down. It was implicit in about forty
+       hand-picked rem values and fifteen inline styles, which is how a screen
+       ends up inventing its own rhythm. Every margin, padding and gap below
+       comes from here, and `test_web_design_system` fails on a shipped
+       `style="` attribute in the markup so a new screen cannot start again. */
+    --s1: .3rem; --s2: .5rem; --s3: .7rem; --s4: 1.1rem; --s5: 1.8rem; --s6: 2.8rem;
+
+    /* The type scale. Five sizes, and the two families already in use. */
+    --t-micro: .71rem; --t-small: .8rem; --t-body: .89rem;
+    --t-lead: 1rem; --t-figure: clamp(1.35rem, 5.6vw, 1.85rem);
   }
   @media (prefers-color-scheme: light) {
     :root { --hull: #F1ECE4; --deck: #F9F6F1; --panel: #FFFFFF; --raise: #FFFFFF;
@@ -66,10 +77,11 @@
   body { margin: 0; background: var(--hull); color: var(--ink);
          font-family: var(--sans); font-size: 17px; line-height: 1.55;
          -webkit-font-smoothing: antialiased }
-  .col { max-width: 34rem; margin: 0 auto; padding: 1.1rem 1.15rem 3rem; min-height: 100vh;
+  .col { max-width: 34rem; margin: 0 auto; padding: 1.1rem 1.15rem 5.5rem; min-height: 100vh;
          display: flex; flex-direction: column }
 
-  .topbar { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem }
+  .topbar { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem;
+            position: relative; z-index: 2 }
   .topbar b { font-family: var(--serif); font-weight: 400; font-size: 1.1rem }
   .topbar .grow { flex: 1 }
   .iconbtn { background: none; border: 1px solid transparent; color: var(--faint);
@@ -82,7 +94,12 @@
 
   /* ---------- Rocky ---------- */
   .stage { position: relative; display: grid; place-items: center; padding: .4rem 0 }
+  /* The glow is 250px tall inside a shorter box, so it overhangs the bar above
+     it. Decorative and 250px wide, it sat exactly over the theme control at a
+     phone width and swallowed every tap on it, while leaving it clickable on a
+     desktop where the column is wider. Nothing decorative takes a pointer. */
   .stage::before { content: ""; position: absolute; width: 250px; height: 250px;
+    pointer-events: none;
     background: radial-gradient(circle, var(--car-soft) 0%, transparent 68%) }
   .creature { width: 130px; height: 130px }
   .creature.big { width: 168px; height: 168px }
@@ -117,7 +134,6 @@
     button, input { transition: background .18s var(--ease), border-color .18s var(--ease),
                     color .18s var(--ease), transform .1s var(--ease) }
     button:active { transform: translateY(1px) }
-    .explore { animation: rise .55s var(--ease) both .15s }
     @keyframes rise { from { opacity: 0; transform: translateY(6px) scale(.97) }
                       to { opacity: 1; transform: none } }
     .tile { animation: rise .5s var(--ease) both }
@@ -134,7 +150,6 @@
     .stage { animation: arrive .7s var(--ease) both }
     @keyframes arrive { from { opacity: 0; transform: scale(.94) }
                         to { opacity: 1; transform: none } }
-    .underrocky { animation: rise .5s var(--ease) both .18s }
 
     /* When your own sentence comes back, the light warms. No words, no alarm. */
     .creature.recalling .plate-2 { animation: warm 3.4s ease-in-out infinite }
@@ -174,13 +189,43 @@
   .orjust { text-align: center; font-size: .78rem; color: var(--faint);
             margin: .85rem 0 .5rem }
 
-  .underrocky { display: flex; justify-content: center; margin: .2rem 0 .3rem }
-  .explore {
-    background: var(--carapace); color: var(--hull); border: 1px solid var(--carapace);
-    padding: .58rem 1.5rem; font-weight: 600; font-size: .93rem; letter-spacing: .01em;
-    border-radius: 99px;
+  /* ---------- four places ----------
+     The whole of the navigation. Fixed, so it is in the same position on
+     every screen and above both overlays; a person never has to find their
+     way back, only choose where to go. */
+  /* Above the sheet (20) so it is reachable from every screen, below the timed
+     session (30) so nothing sits over the field while someone is writing. */
+  .helpdock {
+    position: fixed; right: .7rem; z-index: 25;
+    bottom: calc(3.6rem + env(safe-area-inset-bottom, 0px));
+    background: var(--deck); border: 1px solid var(--line); color: var(--dim);
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
+    text-transform: uppercase; padding: .32rem .6rem; border-radius: 99px;
   }
-  .explore:hover { background: var(--ember); border-color: var(--ember) }
+  .helpdock:hover { color: var(--ink); border-color: var(--car-dim) }
+
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+    display: flex; justify-content: center; gap: .15rem;
+    padding: .35rem .5rem calc(.35rem + env(safe-area-inset-bottom, 0px));
+    background: var(--hull); border-top: 1px solid var(--line);
+  }
+  .tabs button {
+    flex: 1 1 0; max-width: 8rem; background: none; border: 1px solid transparent;
+    border-radius: 8px; padding: .5rem .35rem; color: var(--faint);
+    font-size: .82rem; letter-spacing: .02em;
+  }
+  .tabs b { font-weight: 600 }
+  .tabs button:hover { color: var(--ink) }
+  .tabs button[aria-current="page"] { color: var(--carapace); background: var(--deck) }
+
+  /* An agreement and the switch that grants it, in one control. */
+  .agree { display: flex; gap: .6rem; align-items: flex-start; font-size: .89rem }
+  .agree input { margin-top: .2rem }
+  .keyline { margin: .3rem 0 0; overflow-wrap: anywhere }
+  .keyline code { font-size: .82rem; color: var(--ink); background: var(--deck);
+                  border: 1px solid var(--line); border-radius: 6px; padding: .3rem .45rem;
+                  display: inline-block }
 
   /* three things it does, so the first screen has substance without prose */
   .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem;
@@ -346,7 +391,36 @@
   .sheet h2 { font-family: var(--serif); font-weight: 400; font-size: 1.22rem;
               margin: 1.9rem 0 .2rem }
   .sheet .lead { color: var(--dim); font-size: .89rem; margin: 0 0 .9rem }
-  .card { background: var(--deck); border: 1px solid var(--line); padding: 1rem 1.05rem }
+  /* ---------- the utilities that replaced the inline styles ----------
+     Four of them, from the scale above. Anything a screen needs that is not
+     here is a gap in the system, not a reason for a style attribute. */
+  .mt-sm { margin-top: var(--s2) }
+  .mt { margin-top: var(--s3) }
+  .mt-lg { margin-top: var(--s4) }
+  .mb-sm { margin-bottom: var(--s2) }
+  .wide { flex: 1 1 10rem; min-width: 0 }
+  .narrow { max-width: 11rem }
+  .centred { text-align: center }
+  .spacer { height: var(--s5) }
+  .rowstart { justify-content: flex-start }
+
+  /* ---------- what a screen says: nothing, something, or something broke ----
+     Three states on purpose. A notice replaces the last one rather than
+     stacking under it, which is what the old insertAdjacentHTML did. */
+  .notices:empty { display: none }
+  .notices { margin-bottom: var(--s4) }
+  .said-it { font-size: var(--t-body); color: var(--ink); margin: 0;
+             border-left: 2px solid var(--carapace); padding: var(--s1) 0 var(--s1) var(--s3) }
+  .failed { border: 1px solid var(--car-dim); border-left-width: 3px;
+            background: var(--ember-soft); padding: var(--s3) var(--s4) }
+  .failed b { display: block; font-size: var(--t-body); color: var(--ink) }
+  .failed p { font-size: var(--t-small); color: var(--dim); margin: var(--s2) 0 0 }
+  .failed .raw { font-family: var(--mono); font-size: var(--t-micro); color: var(--faint);
+                 overflow-wrap: anywhere }
+  .failed button { margin-top: var(--s3) }
+  .empty { font-size: var(--t-body); color: var(--faint); font-style: normal }
+
+  .card { background: var(--deck); border: 1px solid var(--line); padding: var(--s4) }
   .field { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap }
   .field label { font-size: .84rem; color: var(--dim) }
   .field input[type=number] { width: 5rem }
@@ -402,7 +476,6 @@
     <button class="home" id="home">rocky</button>
     <span class="grow"></span>
     <button class="iconbtn" id="theme" title="light, dark, or follow the system">theme</button>
-    <button class="iconbtn" id="openSheet">explore</button>
   </div>
 
   <main>
@@ -429,10 +502,6 @@
       </svg>
     </div>
 
-    <div class="underrocky">
-      <button class="explore" id="exploreMain">Explore rocky</button>
-    </div>
-
     <div id="step"></div>
   </main>
 
@@ -451,6 +520,23 @@
     rocky thinks about you. Rocky does not think anything about you.</p>
   </div>
 </div>
+
+<!-- Crisis help, and the reason it is out here rather than in a bar: a control
+     inside a screen is covered the moment another screen opens over it, which
+     is what happened the first time this was built. It is not one of the four
+     places and never competes with them, and it is also the first item of
+     every place's index and a static panel on the first screen. -->
+<button class="helpdock" id="openHelp">help</button>
+
+<!-- Four places, and the whole of the navigation. It sits outside both
+     overlays so it is in the same position on every screen, and each label
+     names what is there rather than describing it. -->
+<nav class="tabs" id="tabs" aria-label="places">
+  <button data-place="write" aria-current="page"><b>Write</b></button>
+  <button data-place="record"><b>Record</b></button>
+  <button data-place="people"><b>People</b></button>
+  <button data-place="you"><b>You</b></button>
+</nav>
 
 <div class="focus" id="focus" role="dialog" aria-label="a timed writing session">
   <div class="fcol">
@@ -494,28 +580,42 @@
   </div>
 </div>
 
-<div class="sheet" id="sheet" role="dialog" aria-label="explore">
+<div class="sheet" id="sheet" role="dialog" aria-label="places">
   <div class="col">
     <div class="topbar">
-      <button class="exit" id="back" hidden>&larr; explore</button>
+      <button class="exit" id="back" hidden>&larr; back</button>
       <b id="sheetTitle">explore</b><span class="grow"></span>
       <button class="exit" id="closeSheet">close</button>
     </div>
 
+    <!-- One list, scoped by place. Every label says what the thing does; the
+         line that used to carry the navigation is now the subtitle, where it
+         still reads well and no longer has to be understood to get anywhere.
+         `data-place="all"` means it appears at the top of every place, which
+         is how crisis help stays one tap from everywhere without becoming a
+         tab that competes with the four. -->
     <nav class="menu" id="menu">
-      <button data-pane="help"><b>If you need someone now</b><span>Crisis lines, including India</span></button>
-      <button data-pane="decide"><b>What you decided</b><span>Write one sentence for the days you are not thinking clearly</span></button>
-      <button data-pane="pair"><b>Someone holding you to it</b><span>Pair with a person who cares about you, both ways</span></button>
-      <button data-pane="keep"><b>What keeping your record means</b><span>Read this before you turn it on</span></button>
-      <button data-pane="circle"><b>A few people together</b><span>A small group who already know each other</span></button>
-      <button data-pane="executor"><b>If you go quiet</b><span>Have your person told, on the terms you set</span></button>
-      <button data-pane="people"><b>People you would tell</b><span>So it can count whether you have named anyone</span></button>
-      <button data-pane="history"><b>Everything you have written</b><span>Your whole record, oldest to newest</span></button>
-      <button data-pane="record"><b>Your record</b><span>Export it, or delete all of it</span></button>
-      <button data-pane="words"><b>What the words mean</b><span>Five terms, plainly</span></button>
-      <button data-pane="never"><b>What it will never do</b><span>The list of limits</span></button>
-      <button data-pane="borrow"><b>What this borrows</b><span>Where the ideas come from, and what this is not</span></button>
-      <button data-pane="tested"><b>How it was tested</b><span>The numbers, including what failed</span></button>
+      <button data-pane="help" data-place="all"><b>Crisis lines</b><span>If you need someone now. Shown to everyone, every time.</span></button>
+
+      <button data-pane="history" data-place="record"><b>Everything you have written</b><span>Your whole record, oldest to newest</span></button>
+      <button data-pane="decide" data-place="record"><b>What you decided</b><span>One sentence for the days you are not thinking as clearly</span></button>
+      <button data-pane="data" data-place="record"><b>Export or delete</b><span>Take a copy, bring one back, or delete all of it</span></button>
+
+      <button data-pane="pair" data-place="people"><b>Pair with someone</b><span>One person, both ways, holding you to a weekly message</span></button>
+      <button data-pane="circle" data-place="people"><b>A small group</b><span>A few people who already know each other</span></button>
+      <button data-pane="executor" data-place="people"><b>Tell someone if you go quiet</b><span>On the terms you set, to the person you named</span></button>
+      <button data-pane="roster" data-place="people"><b>People you would name</b><span>So it can count whether you named anyone, never which one</span></button>
+
+      <button data-pane="account" data-place="you"><b>Your account</b><span>The name your pair sees, and the key that gets it back</span></button>
+      <button data-pane="keep" data-place="you"><b>Keeping your record</b><span>The agreement and the switch, in one place</span></button>
+      <button data-pane="measured" data-place="you"><b>Recording how you use it</b><span>A separate agreement, off until you turn it on</span></button>
+      <button data-pane="server" data-place="you"><b>Use your own server</b><span>Advanced. Run this against a project you control.</span></button>
+      <button data-goplace="about" data-place="you"><b>About rocky</b><span>What the words mean, what it will never do, how it was tested</span></button>
+
+      <button data-pane="words" data-place="about"><b>What the words mean</b><span>Five terms, plainly</span></button>
+      <button data-pane="never" data-place="about"><b>What it will never do</b><span>The list of limits</span></button>
+      <button data-pane="borrow" data-place="about"><b>What this borrows</b><span>Where the ideas come from, and what this is not</span></button>
+      <button data-pane="tested" data-place="about"><b>How it was tested</b><span>The numbers, including what failed</span></button>
     </nav>
 
     <section class="pane" id="pane-help" hidden>
@@ -547,7 +647,7 @@
         <p class="ifthen"><span id="ifPreview">If the quiet runs 3x longer than my usual, then</span></p>
         <input id="written" aria-label="the sentence that is yours"
                placeholder="tell me I said to ring Priya rather than sit with it">
-        <div class="field" style="margin-top:.7rem">
+        <div class="field mt">
           <label id="amtLabel" for="amount">how many times my usual gap</label>
           <input id="amount" type="number" min="2" step="1" value="3">
           <button class="ghost" id="hold">Hold me to it</button>
@@ -567,49 +667,61 @@
         <p class="note">Pairing is optional. Until you create an account here,
         nothing here ever leaves this device and everything else still works.
         Once paired, what travels to them is whether your weekly message went.
-        Keeping a record is a separate agreement below, off until turned on.</p>
-        <button class="ghost" id="ownServer">Use your own server</button>
-        <div id="serverBox" hidden>
-          <div class="field" style="margin-top:.6rem">
-            <input id="sbUrl" placeholder="project address" aria-label="project address"
-                   style="flex:1;min-width:11rem">
-            <input id="sbKey" placeholder="public key" aria-label="public key"
-                   style="flex:1;min-width:9rem">
-            <button class="ghost" id="saveServer">Use this project</button>
-          </div>
-          <p class="note">Both values, or clear both to use Rocky's own.</p>
-        </div>
+        Keeping a record is a separate agreement, under You, off until turned on.</p>
+      </div>
+    </section>
 
-        <div id="syncBox" hidden style="margin-top:1.1rem">
-          <label class="note" style="display:flex;gap:.5rem;align-items:flex-start">
-            <input type="checkbox" id="syncOn" style="margin-top:.25rem">
-            <span>Keep my record</span>
-          </label>
-          <label class="note" style="display:flex;gap:.5rem;align-items:flex-start;margin-top:.5rem">
-            <input type="checkbox" id="usageOn" style="margin-top:.25rem">
-            <span>Record how I use the product</span>
-          </label>
-          <p class="note" id="syncWhat"></p>
-          <p class="note" style="margin-top:.5rem">
-            <button class="ghost" id="openKeep" data-pane="keep">Read what keeping means</button>
-            <button class="ghost" id="openMeasured" data-pane="measured">Read what usage means</button>
-          </p>
-          <div class="field" style="margin-top:.7rem">
-            <input id="claimKey" placeholder="paste your key to get a record back"
-                   aria-label="recovery key" style="flex:1;min-width:12rem">
-            <button class="ghost" id="claimBtn">Get it back</button>
-          </div>
-          <div class="field" style="margin-top:.7rem">
-            <button class="ghost" id="forgetMe">Delete what is kept there</button>
-          </div>
+    <section class="pane" id="pane-account" hidden>
+      <p class="lead">One account, and no email, because pairing does not need
+      one. It exists so a person you paired with can be told what you asked
+      them to be told, and so a record can come back to you.</p>
+      <div class="card">
+        <div id="accountState"></div>
+        <div class="field mt">
+          <input id="claimKey" placeholder="paste a key to get an account back"
+                 aria-label="recovery key" class="wide">
+          <button class="ghost" id="claimBtn">Get it back</button>
         </div>
+        <p class="note">There is no password to reset and no address to send a
+        reset to. The key is the only way back, which is why it is worth
+        putting somewhere you will still have it in a bad month.</p>
+        <div class="field mt-lg">
+          <button class="ghost danger" id="forgetMe">Delete the account</button>
+        </div>
+        <p class="note">That deletes what is kept on the server and ends every
+        pair. What you wrote stays on this device.</p>
+      </div>
+    </section>
 
+    <section class="pane" id="pane-server" hidden>
+      <p class="lead">Rocky ships pointed at its own project. If you run your
+      own, name it here and nothing will be sent to Rocky's.</p>
+      <div class="card">
+        <div class="field">
+          <input id="sbUrl" placeholder="project address" aria-label="project address"
+                 class="wide">
+          <input id="sbKey" placeholder="public key" aria-label="public key"
+                 class="wide">
+          <button class="ghost" id="saveServer">Use this project</button>
+        </div>
+        <p class="note">Both values, or clear both to go back to Rocky's own.</p>
       </div>
     </section>
 
     <section class="pane" id="pane-keep" hidden>
-      <p class="lead">Read this before you turn keeping on. It is an agreement,
-      not a setting.</p>
+      <!-- The switch and the words it agrees to are on one screen because a
+           consent you flip while what it means lives somewhere else is not
+           one. That is the reason, and it stays a comment: the page does not
+           need to explain its own design to the person reading it. -->
+      <p class="lead">An agreement, not a setting. The switch is here, with the
+      words it agrees to.</p>
+      <div class="card" id="syncBox">
+        <label class="agree">
+          <input type="checkbox" id="syncOn">
+          <span><b>Keep my record</b></span>
+        </label>
+        <p class="note" id="syncWhat"></p>
+      </div>
       <div class="card">
         <dl class="terms">
           <div><dt>What is kept</dt><dd>What you wrote and when, the rules you
@@ -630,16 +742,21 @@
         not change that; Rocky's operators hold the keys. That is a real
         disclosure, and it is your decision. With keeping off, the ratio, the
         rules and the writing all still work, entirely on this device.</p>
-        <p class="note">You have the right to know what is held, get a copy,
-        correct it, withdraw consent, and have it erased, each a control in
-        the product rather than a request you send. Grievance contact:
-        abhishekvyas02032001@gmail.com.</p>
+        <p class="note">You can see what is held, take a copy, correct it,
+        withdraw consent, and have it erased, each a control here, not a
+        request you send. Grievance contact: abhishekvyas02032001@gmail.com.</p>
       </div>
     </section>
 
     <section class="pane" id="pane-measured" hidden>
       <p class="lead">A separate agreement from keeping your record. Off by
       default, and off does not affect anything else.</p>
+      <div class="card">
+        <label class="agree">
+          <input type="checkbox" id="usageOn">
+          <span><b>Record how I use the product</b></span>
+        </label>
+      </div>
       <div class="card">
         <dl class="terms">
           <div><dt>What is kept</dt><dd>Which screens you opened, when a
@@ -659,18 +776,18 @@
       can see who else is in it, and nothing else about them.</p>
       <div class="card">
       <div id="circleBox" hidden>
-        <p class="lead" style="margin-bottom:.6rem">A few people who already
+        <p class="lead mb-sm">A few people who already
         know each other. Everyone in one can see who else is in it, and nothing
         else about them.</p>
         <div id="circleState"></div>
-        <div class="field" style="margin-top:.7rem">
+        <div class="field mt">
           <input id="circleName" placeholder="what to call it" aria-label="circle name"
-                 style="flex:1;min-width:10rem">
+                 class="wide">
           <button class="ghost" id="makeCircle">Start one</button>
         </div>
-        <div class="field" style="margin-top:.5rem">
+        <div class="field mt-sm">
           <input id="circleCode" placeholder="or paste a code you were given"
-                 aria-label="circle code" style="flex:1;min-width:12rem">
+                 aria-label="circle code" class="wide">
           <button class="ghost" id="joinCircle">Join</button>
         </div>
         <p class="note">Rocky never suggests who should be in one. There is no
@@ -690,7 +807,7 @@
         this, and nothing else does.</p>
         <div class="field">
           <input id="reachAt" placeholder="email or phone" aria-label="where to reach you"
-                 style="flex:1;min-width:11rem">
+                 class="wide">
           <button class="ghost" id="saveReach">Save</button>
           <button class="ghost" id="clearReach">Remove</button>
         </div>
@@ -700,14 +817,14 @@
       </div>
     </section>
 
-    <section class="pane" id="pane-people" hidden>
+    <section class="pane" id="pane-roster" hidden>
       <p class="lead">It counts how many registered people you named, never which
       one and never what you said about them.</p>
       <div class="card">
         <div class="field">
-          <input id="pname" placeholder="first name" aria-label="name" style="max-width:11rem">
+          <input id="pname" placeholder="first name" aria-label="name" class="narrow">
           <input id="prel" placeholder="who they are to you" aria-label="relationship"
-                 style="flex:1;min-width:10rem">
+                 class="wide">
           <button class="ghost" id="addPerson">Add</button>
         </div>
         <div class="chips" id="people"></div>
@@ -719,7 +836,7 @@
       <div id="historyList"></div>
     </section>
 
-    <section class="pane" id="pane-record" hidden>
+    <section class="pane" id="pane-data" hidden>
       <p class="lead">Your entries are kept in this browser, on this device,
       always. If you pair with someone, a server holds who you are paired
       with and which weeks were kept. If you turn keeping on, that server
@@ -813,11 +930,10 @@
       </details>
     </section>
 
-    <div style="height:2rem"></div>
+    <div class="spacer"></div>
   </div>
 </div>
 <script>
-"use strict";
 var Rocky = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -841,7 +957,9 @@ var Rocky = (() => {
   var main_exports = {};
   __export(main_exports, {
     PANE_TITLES: () => PANE_TITLES,
+    PLACE_TITLES: () => PLACE_TITLES,
     applyTheme: () => applyTheme,
+    canInstall: () => canInstall,
     canStore: () => canStore,
     confirmOk: () => confirmOk,
     countWords: () => countWords,
@@ -859,21 +977,34 @@ var Rocky = (() => {
     project: () => project,
     ratio: () => ratio,
     render: () => render,
+    route: () => route,
     rpc: () => rpc,
     save: () => save,
     session: () => session,
     shareable: () => shareable,
     showPane: () => showPane,
+    showPlace: () => showPlace,
     usual: () => usual
   });
+
+  // src/js/dom.js
+  var $ = (id) => document.getElementById(id);
+  var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function confirmOk(msg) {
+    try {
+      return confirm(msg);
+    } catch {
+      return true;
+    }
+  }
+
+  // src/js/state.js
   var H = 36e5;
   var DAY = 864e5;
   var MIN_GAPS = 8;
   var NEED = MIN_GAPS + 1;
   var KEY = "rocky.v6";
-  var $ = (id) => document.getElementById(id);
-  var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   var db = { checkins: [], people: [], rules: [], acked: {}, demo: false, seen: false, sb: {} };
   var canStore = true;
   try {
@@ -894,7 +1025,42 @@ var Rocky = (() => {
       canStore = false;
     }
   };
-  var kind = "unusual";
+  function setDb(next) {
+    db = next;
+  }
+
+  // src/js/theme.js
+  var THEMES = ["auto", "light", "dark"];
+  function applyTheme() {
+    const mode = db.theme || "auto";
+    const root = document.documentElement;
+    if (mode === "auto") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", mode);
+    const b = $("theme");
+    if (b) b.textContent = mode;
+  }
+  function wireTheme() {
+    $("theme").onclick = () => {
+      db.theme = THEMES[(THEMES.indexOf(db.theme || "auto") + 1) % THEMES.length];
+      save();
+      applyTheme();
+    };
+  }
+
+  // src/js/format.js
+  var human = (h) => {
+    if (h < 1) return Math.round(h * 60) + " minutes";
+    if (h < 36) return Math.round(h) + " hours";
+    const d = h / 24;
+    return (d < 10 ? d.toFixed(1) : Math.round(d)) + " days";
+  };
+  var mmss = (ms) => {
+    const s = Math.max(0, Math.round(ms / 1e3));
+    return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  };
+  var countWords = (s) => s.trim() ? s.trim().split(/\s+/).length : 0;
+
+  // src/js/rhythm.js
   var sorted = () => db.checkins.slice().sort((a, b) => a.at - b.at);
   var gaps = () => {
     const c = sorted(), g = [];
@@ -918,12 +1084,6 @@ var Rocky = (() => {
     const c = sorted();
     for (let i = c.length - 1; i >= 0; i--) if (namedCount(c[i].words) > 0) return (Date.now() - c[i].at) / H;
     return null;
-  };
-  var human = (h) => {
-    if (h < 1) return Math.round(h * 60) + " minutes";
-    if (h < 36) return Math.round(h) + " hours";
-    const d = h / 24;
-    return (d < 10 ? d.toFixed(1) : Math.round(d)) + " days";
   };
   var describe = (r) => r.kind === "unusual" ? r.multiple + "x usual" : r.kind === "days" ? r.days + "d quiet" : r.days + "d unnamed";
   var met = (r) => {
@@ -950,7 +1110,9 @@ var Rocky = (() => {
     if (!db.rules.length) return "promise";
     return "steady";
   }
-  function score(host) {
+
+  // src/js/score.js
+  function score(host2) {
     const c = sorted();
     if (!c.length) return "";
     return '<div class="score"><svg id="scoreSvg" role="img" aria-label="Your rhythm. Each mark is a time you wrote something. A mark sits lower when a long quiet came before it. The shaded stretch on the right is the quiet you are in now."></svg><div class="tip" id="tip"></div></div><div class="axis"><span id="axisFrom"></span><span>today</span></div><div class="scorehint">Each mark is a time you wrote. Lower means a longer quiet came before it. The shaded stretch is the quiet you are in now.</div>';
@@ -1040,71 +1202,140 @@ var Rocky = (() => {
     });
     return '<div class="preview"><div class="head"><span class="tag">an example, after six weeks</span><span class="big">7.7x</span></div><svg viewBox="0 0 ' + W + " " + HT + '" role="img" aria-label="An example rhythm: regular entries, then a long quiet stretch at the right."><rect x="' + (3 + (1 - 12 / total) * (W - 6)).toFixed(1) + '" y="4" width="' + (12 / total * (W - 6)).toFixed(1) + '" height="' + (base - 4) + '" fill="var(--car-soft)"></rect><line x1="3" y1="' + base + '" x2="' + (W - 3) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1"></line>' + marks + "</svg><p>Someone who wrote most days, then went twelve days quiet. Their usual gap was about a day and a half, so the current quiet reads 7.7 times longer than theirs normally runs.</p></div>";
   }
-  var composer = (ph) => '<div class="act"><div class="quietrow"><button class="primary big" id="openFocus">Write for a while</button></div><p class="orjust">or just a line</p><div class="compose"><input id="entry" placeholder="' + (ph || "what happened today?") + '" aria-label="write something"><button class="ghost" id="record">Keep it</button></div></div>';
-  var rehearse = () => {
-    const live = db.rules.filter((r2) => r2.active !== false);
-    if (!live.length) return "";
-    const r = live[0];
-    return '<div class="rehearse"><span class="cond">' + esc(describe(r)) + "</span> " + esc(r.written) + "</div>";
-  };
-  var recent = () => {
-    const c = sorted().slice(-5).reverse();
-    if (!c.length) return "";
-    return '<div style="margin-top:1.2rem">' + c.map((k, i) => {
-      const nx = c[i + 1];
-      const gap = nx ? '<div class="gapnote">' + human((k.at - nx.at) / H) + " of quiet</div>" : "";
-      const nm = namedCount(k.words) ? ' <span class="named">named someone</span>' : "";
-      return '<div class="entry"><time>' + new Date(k.at).toLocaleDateString(
-        void 0,
-        { day: "numeric", month: "short" }
-      ) + "</time><div>" + esc(k.words) + nm + "</div></div>" + gap;
-    }).join("") + "</div>";
-  };
-  function render() {
-    const ph = phase(), n = db.checkins.length, r = ratio(), host = $("step");
-    $("creature").setAttribute(
-      "class",
-      "creature" + (ph === "recall" ? " big recalling" : "")
-    );
-    let html = '<div class="step">';
-    if (ph === "empty") {
-      html += '<p class="say">Write a line about today.</p>' + composer("anything. a word is enough") + '<div class="tiles"><div class="tile"><b>it counts</b><span>When you wrote, and how long the quiet ran between entries.</span></div><div class="tile"><b>it compares</b><span>The current quiet against your own usual gap. Never against anyone else.</span></div><div class="tile"><b>it holds</b><span>One sentence you write in advance, handed back when you asked for it.</span></div></div>' + previewPanel() + '<div class="quietrow"><button class="ghost" id="demo2">Load this example</button><button class="textlink" id="whatIs">What it will never do</button></div><p class="homescreen">Add this to your home screen so it is one tap away. It only notices a quiet stretch when you open it.</p>';
-    } else if (ph === "warming") {
-      const pips = Array.from({ length: NEED }, (_, i) => '<span class="pip' + (i < n ? " on" : "") + '"></span>').join("");
-      html += '<p class="say">' + n + " of " + NEED + ' entries.</p><div class="progress">' + pips + '</div><p class="then">About a week of entries is enough for Rocky to know what usual looks like for you. Until then it has nothing honest to say about your rhythm, so it says nothing.</p>' + composer("and today?") + score() + recent();
-    } else if (ph === "recall") {
-      const fired = due();
-      html += '<p class="say">The quiet has run ' + r.toFixed(1) + ' times longer than yours usually does.</p><p class="then">You normally go about ' + human(usual()) + " between entries. This one has run " + human(openGap()) + ".</p>" + fired.map((x) => '<div class="recall"><div class="eyebrow">you asked to be told</div><blockquote>' + esc(x.written) + '</blockquote><div class="quietrow" style="justify-content:flex-start;margin-top:.8rem"><button class="ghost" data-ack="' + x.id + '">Noted</button></div></div>').join("") + composer("write something now?") + score() + recent();
-    } else if (ph === "promise") {
-      html += '<div class="figure">' + r.toFixed(1) + 'x</div><p class="figmeaning">How long the current quiet has run, divided by your usual gap of ' + human(usual()) + '. A ratio, not a score.</p><p class="say" style="margin-top:1.1rem">Now write down what you want to be told.</p><p class="then">Optional. One sentence, in your words, for the days you are not thinking as clearly as you are now. Rocky holds it and hands it back when you asked it to. Skip it if you would rather just keep the record.</p><div class="quietrow"><button class="primary" id="toSetup">Write that sentence</button></div>' + score() + recent();
-    } else {
-      html += '<div class="figure">' + r.toFixed(1) + 'x</div><p class="figmeaning">How long the current quiet has run, divided by your usual gap of ' + human(usual()) + ". A ratio, not a score.</p>" + (r < 1.5 ? '<p class="then" style="margin-top:.7rem">You are writing about as often as you usually do.</p>' : "") + composer("and today?") + rehearse() + score() + recent();
+
+  // src/js/decide.js
+  var kind = "unusual";
+  function ifPreview() {
+    const n = parseFloat($("amount").value) || 0;
+    const clause = kind === "unusual" ? "the quiet runs " + n + "x longer than my usual" : kind === "days" ? "I have not written for " + n + " days" : "I have not named anyone for " + n + " days";
+    $("ifPreview").textContent = "If " + clause + ", then";
+  }
+  function wireDecide() {
+    $("seg").querySelectorAll("button").forEach((b) => b.onclick = () => {
+      kind = b.dataset.kind;
+      $("seg").querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      const amt = $("amount");
+      if (kind === "unusual") {
+        $("amtLabel").textContent = "how many times my usual gap";
+        amt.value = 3;
+        amt.min = 2;
+      } else if (kind === "days") {
+        $("amtLabel").textContent = "after how many days of quiet";
+        amt.value = 11;
+        amt.min = 1;
+      } else {
+        $("amtLabel").textContent = "after how many days without naming anyone";
+        amt.value = 7;
+        amt.min = 1;
+      }
+      ifPreview();
+    });
+    $("amount").addEventListener("input", ifPreview);
+    $("hold").onclick = () => {
+      const written = $("written").value.trim(), n = parseFloat($("amount").value);
+      if (!written) {
+        $("written").focus();
+        return;
+      }
+      if (kind === "unusual" ? !(n > 1) : !(n > 0)) return;
+      const id = Math.random().toString(16).slice(2, 8);
+      db.rules.push(kind === "unusual" ? { id, written, kind, multiple: n, active: true } : { id, written, kind, days: n, active: true });
+      $("written").value = "";
+      save();
+      render();
+    };
+  }
+
+  // src/js/notice.js
+  function host() {
+    const pane = document.querySelector(".pane:not([hidden])");
+    if (!pane) return null;
+    let box = pane.querySelector(".notices");
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "notices";
+      box.setAttribute("role", "status");
+      pane.insertBefore(box, pane.firstChild);
     }
-    if (!canStore) html += '<p class="note" style="text-align:center">This browser is not allowing storage, so nothing is being saved. It still works, but anything you write goes when you close the tab.</p>';
-    html += "</div>";
-    host.innerHTML = html;
-    paintScore();
-    wireMain();
-    paintSheet();
+    return box;
   }
-  function paintSheet() {
-    $("rules").innerHTML = db.rules.length ? db.rules.map((r) => '<div class="rule' + (r.active === false ? " off" : "") + '"><span class="cond">' + esc(describe(r)) + '</span><span class="said">' + esc(r.written) + '</span><button class="ghost" data-rule="' + r.id + '">' + (r.active === false ? "remove" : "revoke") + "</button></div>").join("") : '<p class="note">Nothing written down yet.</p>';
-    $("people").innerHTML = db.people.length ? db.people.map((p) => '<span class="chip"><b>' + esc(p.name) + "</b>" + (p.rel ? esc(p.rel) : "") + '<button data-drop="' + esc(p.name) + '" aria-label="remove">&times;</button></span>').join("") : '<p class="note">No one registered, so nothing is counted about naming anyone.</p>';
-    $("dataNote").textContent = !canStore ? "This browser is not allowing storage, so nothing here is being saved. Anything you write will go when you close the tab." : db.checkins.length ? db.checkins.length + " entries, " + db.people.length + " people, " + db.rules.length + " rules on this device." : "Nothing stored yet.";
-    document.querySelectorAll("[data-rule]").forEach((b) => b.onclick = () => {
-      const r = db.rules.find((x) => x.id === b.dataset.rule);
-      if (!r) return;
-      if (r.active === false) db.rules = db.rules.filter((x) => x.id !== r.id);
-      else r.active = false;
-      save();
-      render();
-    });
-    document.querySelectorAll("[data-drop]").forEach((b) => b.onclick = () => {
-      db.people = db.people.filter((p) => p.name !== b.dataset.drop);
-      save();
-      render();
-    });
+  function clearNotices() {
+    const box = host();
+    if (box) box.innerHTML = "";
   }
+  function notice(msg) {
+    const box = host();
+    if (box) box.innerHTML = '<p class="said-it">' + esc(msg) + "</p>";
+  }
+  function reason(err) {
+    const raw = String(err && err.message || err || "");
+    if (/failed to fetch|networkerror|load failed|fetch failed/i.test(raw)) {
+      return {
+        why: "The server could not be reached.",
+        still: "Nothing was sent. What you write is still kept on this device.",
+        retry: true
+      };
+    }
+    if (/jwt|token|unauthorized|401/i.test(raw)) {
+      return {
+        why: "This device is no longer signed in to the account.",
+        still: "Your record on this device is untouched. Getting the account back with its key will sign it in again.",
+        retry: true
+      };
+    }
+    if (/no account|not found|404/i.test(raw)) {
+      return {
+        why: "The server has no account matching that.",
+        still: "Nothing changed here.",
+        retry: false
+      };
+    }
+    return {
+      why: "The server refused the request.",
+      still: "Nothing changed here.",
+      retry: true
+    };
+  }
+  function failure(doing, err, again) {
+    const box = host();
+    if (!box) return;
+    const r = reason(err);
+    const raw = String(err && err.message || err || "");
+    box.innerHTML = '<div class="failed"><b>' + esc(doing) + " did not finish.</b><p>" + esc(r.why) + " " + esc(r.still) + "</p>" + (again && r.retry ? '<button class="ghost" data-again="1">Try again</button>' : "") + '<p class="raw">' + esc(raw) + "</p></div>";
+    const btn = box.querySelector("[data-again]");
+    if (btn && again) btn.onclick = () => {
+      clearNotices();
+      again();
+    };
+  }
+  function empty(id, msg) {
+    const el = $(id);
+    if (el) el.innerHTML = '<p class="empty">' + esc(msg) + "</p>";
+  }
+
+  // src/js/history.js
+  function paintHistory() {
+    const c = sorted();
+    const host2 = $("historyList");
+    if (!host2) return;
+    if (!c.length) {
+      empty("historyList", "Nothing written yet. What you write on the first screen shows up here.");
+      return;
+    }
+    host2.innerHTML = c.map((k, i) => {
+      const prev = c[i - 1];
+      const gap = prev ? '<div class="histgap' + ((k.at - prev.at) / H > 24 * 4 ? " long" : "") + '">' + human((k.at - prev.at) / H) + " of quiet</div>" : "";
+      return gap + '<div class="hist"><time>' + new Date(k.at).toLocaleString(void 0, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }) + "</time><p>" + esc(k.words) + "</p></div>";
+    }).join("");
+  }
+
+  // src/js/server.js
   var SHAREABLE = /* @__PURE__ */ new Set([
     "display_name",
     "recovery_key",
@@ -1183,131 +1414,24 @@ var Rocky = (() => {
     }
     save();
   }
+
+  // src/js/pair.js
+  async function refresh() {
+    clearNotices();
+    await refreshShared();
+    paintPair();
+  }
   var overdueWeeks = (secs) => Math.floor(secs / (7 * 24 * 3600)) + 1;
-  var THEMES = ["auto", "light", "dark"];
-  function applyTheme() {
-    const mode = db.theme || "auto";
-    const root = document.documentElement;
-    if (mode === "auto") root.removeAttribute("data-theme");
-    else root.setAttribute("data-theme", mode);
-    const b = $("theme");
-    if (b) b.textContent = mode;
-  }
-  $("theme").onclick = () => {
-    db.theme = THEMES[(THEMES.indexOf(db.theme || "auto") + 1) % THEMES.length];
-    save();
-    applyTheme();
-  };
-  var fMinutes = 10;
-  var fEndsAt = 0;
-  var fTick = null;
-  var mmss = (ms) => {
-    const s = Math.max(0, Math.round(ms / 1e3));
-    return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
-  };
-  var countWords = (s) => s.trim() ? s.trim().split(/\s+/).length : 0;
-  function fPaint() {
-    $("ftime").textContent = fEndsAt ? mmss(fEndsAt - Date.now()) : mmss(fMinutes * 6e4);
-    $("fwords").textContent = countWords($("ftext").value) + " words";
-  }
-  function fStop(note2) {
-    if (fTick) {
-      clearInterval(fTick);
-      fTick = null;
-    }
-    fEndsAt = 0;
-    $("fend").hidden = false;
-    $("fendnote").textContent = note2;
-    fPaint();
-  }
-  function buildDrift() {
-    const host = $("drift");
-    if (!host || reduced) return;
-    const seeds = [8, 21, 34, 47, 60, 73, 86, 15, 41, 68, 92, 29];
-    host.innerHTML = seeds.map((s, i) => '<i style="left:' + s + "%;top:" + s * 7 % 90 + "%;animation-delay:" + (i * 2.1).toFixed(1) + 's"></i>').join("");
-  }
-  function openFocus() {
-    $("focus").classList.remove("running");
-    $("fcreature").hidden = true;
-    $("focus").classList.add("open");
-    document.body.style.overflow = "hidden";
-    $("fsetup").hidden = false;
-    $("ftext").hidden = true;
-    $("fend").hidden = true;
-    $("ftext").value = "";
-    fEndsAt = 0;
-    fPaint();
-  }
-  function closeFocus() {
-    $("focus").classList.remove("running");
-    if (fTick) {
-      clearInterval(fTick);
-      fTick = null;
-    }
-    fEndsAt = 0;
-    $("focus").classList.remove("open");
-    document.body.style.overflow = "";
-    render();
-  }
-  $("durations").querySelectorAll("button").forEach((b) => b.onclick = () => {
-    fMinutes = parseInt(b.dataset.min, 10);
-    $("durations").querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
-    fPaint();
-  });
-  $("fstart").onclick = () => {
-    $("fsetup").hidden = true;
-    $("fcreature").hidden = false;
-    $("focus").classList.add("running");
-    $("ftext").hidden = false;
-    $("ftext").focus();
-    fEndsAt = Date.now() + fMinutes * 6e4;
-    fPaint();
-    fTick = setInterval(() => {
-      fPaint();
-      if (Date.now() >= fEndsAt) fStop("Time is up. Keep it or let it go.");
-    }, 500);
-  };
-  $("ftext").addEventListener("input", fPaint);
-  $("fleave").onclick = () => {
-    if (fEndsAt && countWords($("ftext").value) > 0) {
-      fStop("Stopped early. Keep it or let it go.");
-      return;
-    }
-    closeFocus();
-  };
-  $("fkeep").onclick = () => {
-    const words = $("ftext").value.trim();
-    if (words) {
-      const at = Date.now();
-      db.checkins.push({ at, words });
-      db.demo = false;
-      save();
-      syncCheckin(at);
-      armCommitment();
-      event("entry_kept");
-    }
-    closeFocus();
-  };
-  $("fdiscard").onclick = closeFocus;
   function paintPair() {
-    const host = $("pairState");
-    if (!host) return;
-    const sv = $("sbUrl");
-    if (sv) sv.value = db.sb && db.sb.url || "";
-    const sk = $("sbKey");
-    if (sk) sk.value = db.sb && db.sb.anon || "";
-    paintSync();
-    paintCircles();
-    paintExecutor();
+    const host2 = $("pairState");
+    if (!host2) return;
     if (!db.person_id) {
-      host.innerHTML = '<div class="field"><input id="myName" placeholder="what should they see you as" aria-label="your display name" style="flex:1;min-width:11rem"><button class="ghost" id="makeAccount">Create an account</button></div><p class="note">No email is asked for, because pairing does not need one. You get a key to keep. Losing it loses the account.</p>';
+      host2.innerHTML = '<div class="field"><input id="myName" placeholder="what should they see you as" aria-label="your display name" class="wide"><button class="ghost" id="makeAccount">Create an account</button></div><p class="note">No email is asked for, because pairing does not need one. You get a key to keep. Losing it loses the account.</p>';
       wirePair();
       return;
     }
     const shared = db.shared || {};
-    if (shared.error) {
-      host.innerHTML = '<p class="note">' + esc(shared.error) + "</p>";
-    }
+    if (shared.error) failure("Reading your pairs", shared.error, refresh);
     const pairs = shared.pairs || [];
     let html = pairs.map((p) => {
       const yours = p.you_last_sent ? "you last sent " + human((Date.now() / 1e3 - p.you_last_sent) / 3600) + " ago" : "you have not sent one yet";
@@ -1315,8 +1439,8 @@ var Rocky = (() => {
       const late = p.you_overdue_seconds > 0 ? '<div class="histgap long">your week is ' + overdueWeeks(p.you_overdue_seconds) + " past</div>" : "";
       return '<div class="rule"><span class="said"><b>' + esc(p.with) + '</b><br><span class="note">' + yours + ". " + theirs + "</span>" + late + '</span><button class="ghost" data-sent="' + p.pair_id + '">I sent it</button><button class="ghost" data-endpair="' + p.pair_id + '">End</button></div>';
     }).join("");
-    html += '<div class="field" style="margin-top:.9rem"><button class="ghost" id="makeInvite">Invite someone</button><input id="pairCode" placeholder="or paste their code" aria-label="invite code" style="flex:1;min-width:10rem"><button class="ghost" id="acceptInvite">Accept</button></div><p class="note">Either of you can end a pair alone, at once, without saying why. The shared history goes with it.</p>';
-    host.innerHTML = (shared.error ? host.innerHTML : "") + html;
+    html += '<div class="field mt-lg"><button class="ghost" id="makeInvite">Invite someone</button><input id="pairCode" placeholder="or paste their code" aria-label="invite code" class="wide"><button class="ghost" id="acceptInvite">Accept</button></div><p class="note">Either of you can end a pair alone, at once, without saying why. The shared history goes with it.</p>';
+    host2.innerHTML = html;
     wirePair();
   }
   function wirePair() {
@@ -1324,11 +1448,7 @@ var Rocky = (() => {
       const el = $(id);
       if (el) el.onclick = fn;
     };
-    const fail = (e) => {
-      db.shared = { error: String(e.message || e) };
-      save();
-      paintPair();
-    };
+    const fail = (doing, e, again) => failure(doing, e, again);
     on("makeAccount", async () => {
       try {
         const name = ($("myName").value || "").trim();
@@ -1340,18 +1460,14 @@ var Rocky = (() => {
         await refreshShared();
         paintPair();
       } catch (e) {
-        fail(e);
+        fail("Creating the account", e);
       }
     });
     on("makeInvite", async () => {
       try {
-        const out = { code: await rpc("pair_invite_new") };
-        $("pairState").insertAdjacentHTML(
-          "afterbegin",
-          '<p class="note">Give them this code: <b>' + esc(out.code) + "</b></p>"
-        );
+        notice("Give them this code: " + await rpc("pair_invite_new"));
       } catch (e) {
-        fail(e);
+        fail("Making an invite", e);
       }
     });
     on("acceptInvite", async () => {
@@ -1362,7 +1478,7 @@ var Rocky = (() => {
         await refreshShared();
         paintPair();
       } catch (e) {
-        fail(e);
+        fail("Accepting the invite", e);
       }
     });
     document.querySelectorAll("[data-sent]").forEach((b) => b.onclick = async () => {
@@ -1371,7 +1487,7 @@ var Rocky = (() => {
         await refreshShared();
         paintPair();
       } catch (e) {
-        fail(e);
+        fail("Marking the week sent", e);
       }
     });
     document.querySelectorAll("[data-endpair]").forEach((b) => b.onclick = async () => {
@@ -1380,196 +1496,75 @@ var Rocky = (() => {
         await refreshShared();
         paintPair();
       } catch (e) {
-        fail(e);
+        fail("Ending the pair", e);
       }
     });
   }
-  function paintHistory() {
-    const c = sorted();
-    const host = $("historyList");
-    if (!host) return;
-    if (!c.length) {
-      host.innerHTML = '<p class="note">Nothing written yet.</p>';
-      return;
-    }
-    host.innerHTML = c.map((k, i) => {
-      const prev = c[i - 1];
-      const gap = prev ? '<div class="histgap' + ((k.at - prev.at) / H > 24 * 4 ? " long" : "") + '">' + human((k.at - prev.at) / H) + " of quiet</div>" : "";
-      return gap + '<div class="hist"><time>' + new Date(k.at).toLocaleString(void 0, {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      }) + "</time><p>" + esc(k.words) + "</p></div>";
-    }).join("");
-  }
-  function strike() {
-    if (reduced) return;
-    const el = $("creature");
-    el.classList.remove("struck");
-    void el.getBoundingClientRect();
-    el.classList.add("struck");
-    setTimeout(() => el.classList.remove("struck"), 980);
-  }
-  function writeEntry() {
-    const el = $("entry");
-    if (!el) return;
-    const t = el.value.trim();
-    if (!t) return;
-    const at = Date.now();
-    db.checkins.push({ at, words: t });
-    syncCheckin(at);
-    armCommitment();
-    db.demo = false;
-    save();
-    render();
-    strike();
-  }
-  function wireMain() {
-    const rec = $("record"), ent = $("entry");
-    if (rec) rec.onclick = writeEntry;
-    if (ent) ent.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") writeEntry();
-    });
-    const d2 = $("demo2");
-    if (d2) d2.onclick = loadDemo;
-    const wi = $("whatIs");
-    if (wi) wi.onclick = openSheet;
-    const em = $("exploreMain");
-    if (em) em.onclick = openSheet;
-    const of = $("openFocus");
-    if (of) of.onclick = openFocus;
-    $("openSheet").hidden = false;
-    const ent2 = $("entry");
-    const touch = matchMedia("(hover: none)").matches;
-    if (ent2 && db.checkins.length === 0 && !reduced && !touch) ent2.focus();
-    const ts = $("toSetup");
-    if (ts) ts.onclick = () => {
-      openSheet();
-      showPane("decide");
-      $("written").focus();
-    };
-    document.querySelectorAll("[data-ack]").forEach((b) => b.onclick = () => {
-      const c = sorted();
-      db.acked[b.dataset.ack] = c.length ? c[c.length - 1].at + 1 : Date.now();
-      save();
-      render();
-    });
-  }
-  var PANE_TITLES = {
-    help: "if you need someone now",
-    decide: "what you decided",
-    people: "people you would tell",
-    record: "your record",
-    words: "what the words mean",
-    never: "what it will never do",
-    borrow: "what this borrows",
-    tested: "how it was tested",
-    pair: "someone holding you to it",
-    circle: "a few people together",
-    executor: "if you go quiet",
-    history: "everything you have written",
-    keep: "what keeping your record means",
-    measured: "what usage means"
-  };
-  function showMenu() {
-    $("menu").hidden = false;
-    $("back").hidden = true;
-    $("sheetTitle").textContent = "explore";
-    Object.keys(PANE_TITLES).forEach((k) => {
-      $("pane-" + k).hidden = true;
-    });
-  }
-  function showPane(name) {
-    $("menu").hidden = true;
-    $("back").hidden = false;
-    $("sheetTitle").textContent = PANE_TITLES[name] || "explore";
-    Object.keys(PANE_TITLES).forEach((k) => {
-      $("pane-" + k).hidden = k !== name;
-    });
-    if (name === "decide") ifPreview();
-    if (name === "history") paintHistory();
-    if (name === "pair") paintPair();
-  }
-  $("menu").querySelectorAll("button").forEach((b) => b.onclick = () => showPane(b.dataset.pane));
-  $("back").onclick = showMenu;
-  var openSheet = () => {
-    showMenu();
-    $("sheet").classList.add("open");
-    document.body.style.overflow = "hidden";
-  };
-  var closeSheet = () => {
-    $("sheet").classList.remove("open");
-    document.body.style.overflow = "";
-  };
-  $("openSheet").onclick = openSheet;
-  $("closeSheet").onclick = closeSheet;
-  addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeSheet();
-  });
-  $("seg").querySelectorAll("button").forEach((b) => b.onclick = () => {
-    kind = b.dataset.kind;
-    $("seg").querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
-    const amt = $("amount");
-    if (kind === "unusual") {
-      $("amtLabel").textContent = "how many times my usual gap";
-      amt.value = 3;
-      amt.min = 2;
-    } else if (kind === "days") {
-      $("amtLabel").textContent = "after how many days of quiet";
-      amt.value = 11;
-      amt.min = 1;
-    } else {
-      $("amtLabel").textContent = "after how many days without naming anyone";
-      amt.value = 7;
-      amt.min = 1;
-    }
-    ifPreview();
-  });
-  function ifPreview() {
-    const n = parseFloat($("amount").value) || 0;
-    const clause = kind === "unusual" ? "the quiet runs " + n + "x longer than my usual" : kind === "days" ? "I have not written for " + n + " days" : "I have not named anyone for " + n + " days";
-    $("ifPreview").textContent = "If " + clause + ", then";
-  }
-  $("amount").addEventListener("input", ifPreview);
-  $("hold").onclick = () => {
-    const written = $("written").value.trim(), n = parseFloat($("amount").value);
-    if (!written) {
-      $("written").focus();
-      return;
-    }
-    if (kind === "unusual" ? !(n > 1) : !(n > 0)) return;
-    const id = Math.random().toString(16).slice(2, 8);
-    db.rules.push(kind === "unusual" ? { id, written, kind, multiple: n, active: true } : { id, written, kind, days: n, active: true });
-    $("written").value = "";
-    save();
-    render();
-  };
-  function confirmOk(msg) {
-    try {
-      return confirm(msg);
-    } catch {
-      return true;
-    }
-  }
-  function note(msg) {
-    const host = $("pairState");
-    if (host) host.insertAdjacentHTML("afterbegin", '<p class="note">' + esc(msg) + "</p>");
-  }
-  var NOTICE_VERSION = "2026-08-15";
-  function paintSync() {
-    const box = $("syncBox");
+  function paintCircles() {
+    const box = $("circleBox");
     if (!box) return;
-    box.hidden = !project();
-    const keep = $("syncOn"), usage = $("usageOn");
-    if (keep) keep.checked = !!db.keep;
-    if (usage) usage.checked = !!db.usage;
-    const what = $("syncWhat");
-    if (what) {
-      what.textContent = db.keep ? "On. What you wrote is kept on the server. People who operate Rocky can read it, and it is used for research into founder mental health." : "Off. Nothing you write leaves this device.";
+    box.hidden = !project() || !db.person_id;
+    const host2 = $("circleState");
+    if (!host2) return;
+    const mine = db.shared && db.shared.circles || [];
+    if (!mine.length) {
+      empty("circleState", "You are not in a circle. Start one below, or join one with a code someone gave you.");
+      return;
     }
+    host2.innerHTML = mine.map(
+      (c) => '<div class="card mb-sm"><b>' + esc(c.name) + '</b><p class="note">' + (c.members || []).map(esc).join(", ") + '</p><button class="ghost" data-circleinvite="' + esc(c.circle_id) + '">Invite someone</button> <button class="ghost" data-circleleave="' + esc(c.circle_id) + '">Leave</button></div>'
+    ).join("");
+    host2.querySelectorAll("[data-circleinvite]").forEach((b) => {
+      b.onclick = async () => {
+        try {
+          const code = await rpc("circle_invite_new", { circle_id: b.dataset.circleinvite });
+          notice("Give them this code: " + code);
+        } catch (e) {
+          failure("Making a code", e);
+        }
+      };
+    });
+    host2.querySelectorAll("[data-circleleave]").forEach((b) => {
+      b.onclick = async () => {
+        if (!confirmOk("Leave this circle?")) return;
+        try {
+          await rpc("circle_leave", { circle_id: b.dataset.circleleave });
+          await refreshShared();
+          paintPair();
+        } catch (e) {
+          failure("Leaving the circle", e);
+        }
+      };
+    });
   }
+  function wireCircles() {
+    $("makeCircle") && ($("makeCircle").onclick = async () => {
+      const name = ($("circleName").value || "").trim();
+      if (!name) return;
+      try {
+        await rpc("circle_create", { name });
+        $("circleName").value = "";
+        await refreshShared();
+        paintPair();
+      } catch (e) {
+        failure("Starting the circle", e);
+      }
+    });
+    $("joinCircle") && ($("joinCircle").onclick = async () => {
+      const code = ($("circleCode").value || "").trim();
+      if (!code) return;
+      try {
+        await rpc("circle_join", { code });
+        $("circleCode").value = "";
+        await refreshShared();
+        paintPair();
+      } catch (e) {
+        failure("Joining the circle", e);
+      }
+    });
+  }
+
+  // src/js/executor.js
   function nextFiring() {
     const rule = db.rules.find((r) => r.active);
     const last = sorted().slice(-1)[0];
@@ -1602,22 +1597,22 @@ var Rocky = (() => {
     }
   }
   function paintExecutor() {
-    const host = $("execState");
-    if (!host) return;
+    const host2 = $("execState");
+    if (!host2) return;
     const reach = $("reachAt");
     if (reach && db.reach_at !== void 0) reach.value = db.reach_at || "";
     if (!project() || !db.person_id) {
-      host.innerHTML = '<p class="note">This needs a project and a pair. Nothing here reaches anyone until both exist.</p>';
+      host2.innerHTML = '<p class="note">This needs a project and a pair. Nothing here reaches anyone until both exist.</p>';
       return;
     }
     const pair = (db.shared && db.shared.pairs || [])[0];
     if (!pair) {
-      host.innerHTML = '<p class="note">Pair with someone first. Rocky only ever tells a person you already chose.</p>';
+      host2.innerHTML = '<p class="note">Pair with someone first. Rocky only ever tells a person you already chose.</p>';
       return;
     }
     const at = nextFiring();
     const on = !!db.exec;
-    host.innerHTML = '<label class="note" style="display:flex;gap:.5rem;align-items:flex-start"><input type="checkbox" id="execOn"' + (on ? " checked" : "") + ' style="margin-top:.25rem"><span>Tell ' + esc(pair.with) + ' if I go quiet past what I wrote down</span></label><p class="note">' + (!on ? "Off. Nobody is told anything." : at === null ? "On, but there is no rule it can use yet. Write one, and keep writing for about a week so it has your own rhythm to measure against." : "On. As things stand, " + esc(pair.with) + " would be told after " + new Date(at).toLocaleString() + ". Every time you write, that moves.") + "</p>" + (db.commitment && on ? '<button class="ghost" id="disarm">Cancel it</button>' : "");
+    host2.innerHTML = '<label class="agree"><input type="checkbox" id="execOn"' + (on ? " checked" : "") + "><span>Tell " + esc(pair.with) + ' if I go quiet past what I wrote down</span></label><p class="note">' + (!on ? "Off. Nobody is told anything." : at === null ? "On, but there is no rule it can use yet. Write one, and keep writing for about a week so it has your own rhythm to measure against." : "On. As things stand, " + esc(pair.with) + " would be told after " + new Date(at).toLocaleString() + ". Every time you write, that moves.") + "</p>" + (db.commitment && on ? '<button class="ghost" id="disarm">Cancel it</button>' : "");
     const box = $("execOn");
     if (box) box.onchange = async (e) => {
       db.exec = e.target.checked;
@@ -1646,91 +1641,61 @@ var Rocky = (() => {
       paintExecutor();
     };
   }
-  $("saveReach") && ($("saveReach").onclick = async () => {
-    const at = ($("reachAt").value || "").trim();
-    if (!at) return;
-    const kind2 = at.includes("@") ? "email" : "whatsapp";
-    try {
-      await rpc("reachable_set", { at, kind: kind2 });
-      db.reach_at = at;
-      save();
-      note("Saved. Only a pair of yours can cause anything to be sent here.");
-    } catch (e) {
-      note(String(e.message || e));
-    }
-  });
-  $("clearReach") && ($("clearReach").onclick = async () => {
-    try {
-      await rpc("reachable_set", { at: "", kind: "email" });
-      db.reach_at = "";
-      $("reachAt").value = "";
-      save();
-      note("Removed. Nothing can reach you now.");
-    } catch (e) {
-      note(String(e.message || e));
-    }
-  });
-  function paintCircles() {
-    const box = $("circleBox");
-    if (!box) return;
-    box.hidden = !project() || !db.person_id;
-    const host = $("circleState");
-    if (!host) return;
-    const mine = db.shared && db.shared.circles || [];
-    if (!mine.length) {
-      host.innerHTML = '<p class="note">You are not in one.</p>';
-      return;
-    }
-    host.innerHTML = mine.map(
-      (c) => '<div class="card" style="margin-bottom:.5rem"><b>' + esc(c.name) + '</b><p class="note">' + (c.members || []).map(esc).join(", ") + '</p><button class="ghost" data-circleinvite="' + esc(c.circle_id) + '">Invite someone</button> <button class="ghost" data-circleleave="' + esc(c.circle_id) + '">Leave</button></div>'
-    ).join("");
-    host.querySelectorAll("[data-circleinvite]").forEach((b) => {
-      b.onclick = async () => {
-        try {
-          const code = await rpc("circle_invite_new", { circle_id: b.dataset.circleinvite });
-          note("Give them this code: " + code);
-        } catch (e) {
-          note(String(e.message || e));
-        }
-      };
+  function wireExecutor() {
+    $("saveReach") && ($("saveReach").onclick = async () => {
+      const at = ($("reachAt").value || "").trim();
+      if (!at) return;
+      const kind2 = at.includes("@") ? "email" : "whatsapp";
+      try {
+        await rpc("reachable_set", { at, kind: kind2 });
+        db.reach_at = at;
+        save();
+        notice("Saved. Only a pair of yours can cause anything to be sent here.");
+      } catch (e) {
+        failure("Saving where to reach you", e);
+      }
     });
-    host.querySelectorAll("[data-circleleave]").forEach((b) => {
-      b.onclick = async () => {
-        if (!confirmOk("Leave this circle?")) return;
-        try {
-          await rpc("circle_leave", { circle_id: b.dataset.circleleave });
-          await refreshShared();
-          paintPair();
-        } catch (e) {
-          note(String(e.message || e));
-        }
-      };
+    $("clearReach") && ($("clearReach").onclick = async () => {
+      try {
+        await rpc("reachable_set", { at: "", kind: "email" });
+        db.reach_at = "";
+        $("reachAt").value = "";
+        save();
+        notice("Removed. Nothing can reach you now.");
+      } catch (e) {
+        failure("Removing where to reach you", e);
+      }
     });
   }
-  $("makeCircle") && ($("makeCircle").onclick = async () => {
-    const name = ($("circleName").value || "").trim();
-    if (!name) return;
-    try {
-      await rpc("circle_create", { name });
-      $("circleName").value = "";
-      await refreshShared();
-      paintPair();
-    } catch (e) {
-      note(String(e.message || e));
+
+  // src/js/account.js
+  var NOTICE_VERSION = "2026-08-15";
+  function paintSync() {
+    const box = $("syncBox");
+    if (!box) return;
+    box.hidden = !project();
+    const keep = $("syncOn"), usage = $("usageOn");
+    if (keep) keep.checked = !!db.keep;
+    if (usage) usage.checked = !!db.usage;
+    const what = $("syncWhat");
+    if (what) {
+      what.textContent = db.keep ? "On. What you wrote is kept on the server. People who operate Rocky can read it, and it is used for research into founder mental health." : "Off. Nothing you write leaves this device.";
     }
-  });
-  $("joinCircle") && ($("joinCircle").onclick = async () => {
-    const code = ($("circleCode").value || "").trim();
-    if (!code) return;
-    try {
-      await rpc("circle_join", { code });
-      $("circleCode").value = "";
-      await refreshShared();
-      paintPair();
-    } catch (e) {
-      note(String(e.message || e));
+  }
+  function paintAccount() {
+    const host2 = $("accountState");
+    if (!host2) return;
+    if (!db.person_id) {
+      host2.innerHTML = '<p class="note">No account on this device. One is made the first time you pair with someone, under People. Nothing here needs one: the writing, the rhythm and the sentence all work without it.</p>';
+      return;
     }
-  });
+    host2.innerHTML = '<p class="note">There is an account on this device.</p>' + (db.recovery_key ? '<p class="note">Its key, which is the only way back to it:</p><p class="keyline"><code>' + esc(db.recovery_key) + "</code></p>" : '<p class="note">Its key was written down on another device. Paste it below to bring the account here.</p>');
+  }
+  function paintServer() {
+    const url = $("sbUrl"), key = $("sbKey");
+    if (url) url.value = db.sb && db.sb.url || "";
+    if (key) key.value = db.sb && db.sb.anon || "";
+  }
   var putTimer = null;
   function syncRecord() {
     if (!db.keep || !project() || !db.person_id) return;
@@ -1766,139 +1731,265 @@ var Rocky = (() => {
     rpc("usage_record", { name, detail: detail || {} }).catch(() => {
     });
   }
-  $("syncOn") && ($("syncOn").onchange = async (e) => {
-    const on = e.target.checked;
-    try {
-      if (on) {
-        if (!db.person_id) {
-          e.target.checked = false;
-          note("Give a name first.");
-          return;
-        }
-        await rpc("consent_grant", { purpose: "sync", notice_version: NOTICE_VERSION });
-        db.keep = true;
-        save();
-        for (const c of db.checkins) await syncCheckin(c.at);
-        syncRecord();
-        note("On. What you write is kept from now on, and what is already here has been sent.");
-      } else {
-        db.keep = false;
-        save();
-        await rpc("consent_withdraw", { purpose: "sync" });
-        note("Off, and everything that was kept there is deleted.");
-      }
-    } catch (err) {
-      note(String(err.message || err));
-    }
-    paintSync();
-  });
-  $("usageOn") && ($("usageOn").onchange = async (e) => {
-    const on = e.target.checked;
-    try {
-      if (on) {
-        if (!db.person_id) {
-          e.target.checked = false;
-          note("Give a name first.");
-          return;
-        }
-        await rpc("consent_grant", { purpose: "product", notice_version: NOTICE_VERSION });
-        db.usage = true;
-        save();
-        note("On. Which screens you open is recorded. Not a word of what you type.");
-      } else {
-        db.usage = false;
-        save();
-        await rpc("consent_withdraw", { purpose: "product" });
-        note("Off, and what was recorded is deleted.");
-      }
-    } catch (err) {
-      note(String(err.message || err));
-    }
-    paintSync();
-  });
-  $("claimBtn") && ($("claimBtn").onclick = async () => {
-    const key = ($("claimKey").value || "").trim();
-    if (!key) return;
-    try {
-      db.person_id = await rpc("account_claim", { recovery_key: key });
+  function wireAccount() {
+    $("syncOn") && ($("syncOn").onchange = async (e) => {
+      const on = e.target.checked;
       try {
-        const whole = await rpc("record_get");
-        if (whole && (whole.checkins || []).length) {
-          db.checkins = whole.checkins.map((c) => ({ at: c.at, words: c.words || "" }));
-          db.rules = whole.rules || db.rules;
-          db.people = whole.people || db.people;
+        if (on) {
+          if (!db.person_id) {
+            e.target.checked = false;
+            notice("Create an account under People first. Keeping needs somewhere to keep it.");
+            return;
+          }
+          await rpc("consent_grant", { purpose: "sync", notice_version: NOTICE_VERSION });
           db.keep = true;
           save();
-          note(db.checkins.length + " entries came back, with what you wrote.");
-          await refreshShared();
-          render();
-          paintPair();
-          return;
+          for (const c of db.checkins) await syncCheckin(c.at);
+          syncRecord();
+          notice("On. What you write is kept from now on, and what is already here has been sent.");
+        } else {
+          db.keep = false;
+          save();
+          await rpc("consent_withdraw", { purpose: "sync" });
+          notice("Off, and everything that was kept there is deleted.");
         }
-      } catch {
+      } catch (err) {
+        failure(on ? "Turning keeping on" : "Turning keeping off", err);
+        e.target.checked = !!db.keep;
       }
-      const rows = await rpc("check_in_history");
-      const known = new Set(db.checkins.map((c) => new Date(c.at).toISOString()));
-      let added = 0;
-      for (const r of rows || []) {
-        const iso = new Date(r.at).toISOString();
-        if (known.has(iso)) continue;
-        db.checkins.push({ at: new Date(iso).getTime(), words: "", recovered: true });
-        added++;
-      }
-      db.checkins.sort((a, b) => a.at - b.at);
-      db.sync = true;
-      save();
-      note(added + (added === 1 ? " time came back." : " times came back.") + " What you wrote was never sent, so it is not here.");
-      await refreshShared();
-      render();
-      paintPair();
-    } catch (err) {
-      note(String(err.message || err));
-    }
-  });
-  $("forgetMe") && ($("forgetMe").onclick = async () => {
-    if (!confirmOk("Delete the account and every time kept there? This page keeps what you wrote.")) return;
-    try {
-      await rpc("account_delete");
-      db.person_id = null;
-      db.recovery_key = null;
-      db.sync = false;
-      db.sb = Object.assign({}, db.sb, { token: null, refresh: null, expires: 0 });
-      db.shared = null;
-      save();
-      note("Deleted. What you wrote is still here.");
-      render();
-      paintPair();
-    } catch (err) {
-      note(String(err.message || err));
-    }
-  });
-  $("ownServer").onclick = () => {
-    $("serverBox").hidden = !$("serverBox").hidden;
-  };
-  $("openKeep").onclick = () => showPane("keep");
-  $("openMeasured").onclick = () => showPane("measured");
-  $("saveServer").onclick = async () => {
-    db.sb = Object.assign({}, db.sb, {
-      url: ($("sbUrl").value || "").trim(),
-      anon: ($("sbKey").value || "").trim()
+      paintSync();
     });
-    save();
-    note(db.sb.url && db.sb.anon ? "Using the project you set." : "Using Rocky's own project.");
-    await refreshShared();
-    paintPair();
+    $("usageOn") && ($("usageOn").onchange = async (e) => {
+      const on = e.target.checked;
+      try {
+        if (on) {
+          if (!db.person_id) {
+            e.target.checked = false;
+            notice("Create an account under People first. There is nowhere to record anything yet.");
+            return;
+          }
+          await rpc("consent_grant", { purpose: "product", notice_version: NOTICE_VERSION });
+          db.usage = true;
+          save();
+          notice("On. Which screens you open is recorded. Not a word of what you type.");
+        } else {
+          db.usage = false;
+          save();
+          await rpc("consent_withdraw", { purpose: "product" });
+          notice("Off, and what was recorded is deleted.");
+        }
+      } catch (err) {
+        failure(on ? "Turning recording on" : "Turning recording off", err);
+        e.target.checked = !!db.usage;
+      }
+      paintSync();
+    });
+    $("claimBtn") && ($("claimBtn").onclick = async () => {
+      const key = ($("claimKey").value || "").trim();
+      if (!key) return;
+      try {
+        db.person_id = await rpc("account_claim", { recovery_key: key });
+        try {
+          const whole = await rpc("record_get");
+          if (whole && (whole.checkins || []).length) {
+            db.checkins = whole.checkins.map((c) => ({ at: c.at, words: c.words || "" }));
+            db.rules = whole.rules || db.rules;
+            db.people = whole.people || db.people;
+            db.keep = true;
+            save();
+            notice(db.checkins.length + " entries came back, with what you wrote.");
+            await refreshShared();
+            render();
+            paintPair();
+            return;
+          }
+        } catch {
+        }
+        const rows = await rpc("check_in_history");
+        const known = new Set(db.checkins.map((c) => new Date(c.at).toISOString()));
+        let added = 0;
+        for (const r of rows || []) {
+          const iso = new Date(r.at).toISOString();
+          if (known.has(iso)) continue;
+          db.checkins.push({ at: new Date(iso).getTime(), words: "", recovered: true });
+          added++;
+        }
+        db.checkins.sort((a, b) => a.at - b.at);
+        db.sync = true;
+        save();
+        notice(added + (added === 1 ? " time came back." : " times came back.") + " What you wrote was never sent, so it is not here.");
+        await refreshShared();
+        render();
+        paintPair();
+      } catch (err) {
+        failure("Getting the account back", err);
+      }
+    });
+    $("forgetMe") && ($("forgetMe").onclick = async () => {
+      if (!confirmOk("Delete the account and every time kept there? This page keeps what you wrote.")) return;
+      try {
+        await rpc("account_delete");
+        db.person_id = null;
+        db.recovery_key = null;
+        db.sync = false;
+        db.sb = Object.assign({}, db.sb, { token: null, refresh: null, expires: 0 });
+        db.shared = null;
+        save();
+        notice("Deleted. What you wrote is still here.");
+        render();
+        paintPair();
+        paintAccount();
+      } catch (err) {
+        failure("Deleting the account", err);
+      }
+    });
+    $("saveServer").onclick = async () => {
+      db.sb = Object.assign({}, db.sb, {
+        url: ($("sbUrl").value || "").trim(),
+        anon: ($("sbKey").value || "").trim()
+      });
+      save();
+      notice(db.sb.url && db.sb.anon ? "Using the project you set." : "Using Rocky's own project.");
+      await refreshShared();
+      paintPair();
+    };
+  }
+
+  // src/js/sheet.js
+  var PANE_TITLES = {
+    help: "crisis lines",
+    history: "everything you have written",
+    decide: "what you decided",
+    data: "export or delete",
+    pair: "pair with someone",
+    circle: "a small group",
+    executor: "tell someone if you go quiet",
+    roster: "people you would name",
+    account: "your account",
+    keep: "keeping your record",
+    measured: "recording how you use it",
+    server: "use your own server",
+    words: "what the words mean",
+    never: "what it will never do",
+    borrow: "what this borrows",
+    tested: "how it was tested"
   };
-  $("addPerson").onclick = () => {
-    const name = $("pname").value.trim();
-    if (!name) return;
-    if (!db.people.some((p) => p.name.toLowerCase() === name.toLowerCase()))
-      db.people.push({ name, rel: $("prel").value.trim() });
-    $("pname").value = "";
-    $("prel").value = "";
-    save();
-    render();
+  var PLACE_TITLES = {
+    write: "rocky",
+    record: "your record",
+    people: "people",
+    you: "you",
+    about: "about rocky"
   };
+  var HOME = "write";
+  var items = () => Array.from($("menu").querySelectorAll("button"));
+  function placeOfPane(name) {
+    const b = items().find((x) => x.dataset.pane === name);
+    const p = b && b.dataset.place;
+    return !p || p === "all" ? HOME : p;
+  }
+  var isPlace = (name) => Object.prototype.hasOwnProperty.call(PLACE_TITLES, name);
+  var isPane = (name) => Object.prototype.hasOwnProperty.call(PANE_TITLES, name);
+  function openSheetEl() {
+    $("sheet").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeSheet() {
+    $("sheet").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  function hideAllPanes() {
+    Object.keys(PANE_TITLES).forEach((k) => {
+      $("pane-" + k).hidden = true;
+    });
+  }
+  function setBackTo(place) {
+    $("back").textContent = "\u2190 " + PLACE_TITLES[place];
+  }
+  function markTab(place) {
+    $("tabs").querySelectorAll("button").forEach((b) => {
+      if (b.dataset.place === place) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+  }
+  function showPlace(name) {
+    const place = isPlace(name) ? name : HOME;
+    hideAllPanes();
+    $("menu").hidden = place === HOME;
+    $("back").hidden = place !== "about";
+    if (place === "about") setBackTo("you");
+    $("sheetTitle").textContent = PLACE_TITLES[place];
+    items().forEach((b) => {
+      const p = b.dataset.place;
+      b.hidden = !(p === place || p === "all" && place !== HOME);
+    });
+    markTab(place === "about" ? "you" : place);
+    if (place === HOME) closeSheet();
+    else openSheetEl();
+  }
+  function showPane(name) {
+    if (!isPane(name)) {
+      showPlace(HOME);
+      return;
+    }
+    const place = placeOfPane(name);
+    $("menu").hidden = true;
+    $("back").hidden = false;
+    setBackTo(place);
+    $("sheetTitle").textContent = PANE_TITLES[name];
+    hideAllPanes();
+    $("pane-" + name).hidden = false;
+    markTab(place === "about" ? "you" : place);
+    openSheetEl();
+    if (name === "decide") ifPreview();
+    if (name === "history") paintHistory();
+    if (name === "pair") paintPair();
+    if (name === "circle") paintCircles();
+    if (name === "executor") paintExecutor();
+    if (name === "account") paintAccount();
+    if (name === "server") paintServer();
+    if (name === "keep" || name === "measured") paintSync();
+  }
+  function route(name) {
+    const next = "#/" + name;
+    if (location.hash === next) {
+      apply(name);
+      return;
+    }
+    location.hash = next;
+  }
+  function current() {
+    const raw = (location.hash || "").replace(/^#\/?/, "").trim();
+    return raw || HOME;
+  }
+  function apply(name) {
+    if (isPane(name)) showPane(name);
+    else showPlace(name);
+  }
+  function wireSheet() {
+    items().forEach((b) => b.onclick = () => {
+      if (b.dataset.goplace) route(b.dataset.goplace);
+      else route(b.dataset.pane);
+    });
+    $("tabs").querySelectorAll("button").forEach((b) => b.onclick = () => route(b.dataset.place));
+    $("back").onclick = () => {
+      const now = current();
+      if (now === "about") {
+        route("you");
+        return;
+      }
+      route(isPane(now) ? placeOfPane(now) : HOME);
+    };
+    $("openHelp").onclick = () => route("help");
+    $("closeSheet").onclick = () => route(HOME);
+    addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && $("sheet").classList.contains("open")) route(HOME);
+    });
+    addEventListener("hashchange", () => apply(current()));
+    apply(current());
+  }
+
+  // src/js/data.js
   function download(name, text, type) {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type }));
@@ -1906,58 +1997,6 @@ var Rocky = (() => {
     a.click();
     URL.revokeObjectURL(a.href);
   }
-  $("restore").onclick = () => $("restoreFile").click();
-  $("restoreFile").onchange = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      let copy;
-      try {
-        copy = JSON.parse(String(reader.result));
-      } catch {
-        $("dataNote").textContent = "That file is not a copy Rocky wrote.";
-        return;
-      }
-      if (!copy || !Array.isArray(copy.checkins)) {
-        $("dataNote").textContent = "That file is not a copy Rocky wrote.";
-        return;
-      }
-      const known = new Set(db.checkins.map((c) => c.at));
-      let added = 0;
-      for (const c of copy.checkins) {
-        if (!c || typeof c.at !== "number" || known.has(c.at)) continue;
-        db.checkins.push({ at: c.at, words: typeof c.words === "string" ? c.words : "" });
-        added++;
-      }
-      for (const person of copy.people || []) {
-        if (person && person.name && !db.people.some((q) => q.name === person.name)) {
-          db.people.push(person);
-        }
-      }
-      db.checkins.sort((a, b) => a.at - b.at);
-      db.demo = false;
-      save();
-      $("dataNote").textContent = added + (added === 1 ? " entry" : " entries") + " came back. Anything already here was kept.";
-      render();
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  };
-  $("export").onclick = () => {
-    const lines = sorted().map((k) => new Date(k.at).toLocaleString() + "\n" + k.words + "\n");
-    download("rocky-record.txt", lines.join("\n"), "text/plain");
-  };
-  $("exportJson").onclick = () => download("rocky-record.json", JSON.stringify(db, null, 2), "application/json");
-  $("wipe").onclick = () => {
-    let ok = false;
-    ok = confirmOk("This deletes your whole record on this device. There is no undo.");
-    if (!ok) return;
-    db = { checkins: [], people: [], rules: [], acked: {}, demo: false, seen: true, sb: {} };
-    save();
-    closeSheet();
-    render();
-  };
   function loadDemo() {
     const now = Date.now();
     const plan = [
@@ -2001,38 +2040,363 @@ var Rocky = (() => {
     }];
     db.acked = {};
     db.demo = true;
+    db.seen = true;
     save();
-    closeSheet();
+    route("write");
     render();
   }
-  $("demo").onclick = loadDemo;
-  addEventListener("resize", paintScore);
-  addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && $("focus").classList.contains("open")) closeFocus();
-  });
-  $("home").onclick = () => {
-    if ($("focus").classList.contains("open")) {
-      closeFocus();
-      return;
-    }
-    if ($("sheet").classList.contains("open")) {
-      closeSheet();
-      return;
-    }
-    showMenu();
+  function wireData() {
+    $("addPerson").onclick = () => {
+      const name = $("pname").value.trim();
+      if (!name) return;
+      if (!db.people.some((p) => p.name.toLowerCase() === name.toLowerCase()))
+        db.people.push({ name, rel: $("prel").value.trim() });
+      $("pname").value = "";
+      $("prel").value = "";
+      save();
+      render();
+    };
+    $("restore").onclick = () => $("restoreFile").click();
+    $("restoreFile").onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        let copy;
+        try {
+          copy = JSON.parse(String(reader.result));
+        } catch {
+          $("dataNote").textContent = "That file is not a copy Rocky wrote.";
+          return;
+        }
+        if (!copy || !Array.isArray(copy.checkins)) {
+          $("dataNote").textContent = "That file is not a copy Rocky wrote.";
+          return;
+        }
+        const known = new Set(db.checkins.map((c) => c.at));
+        let added = 0;
+        for (const c of copy.checkins) {
+          if (!c || typeof c.at !== "number" || known.has(c.at)) continue;
+          db.checkins.push({ at: c.at, words: typeof c.words === "string" ? c.words : "" });
+          added++;
+        }
+        for (const person of copy.people || []) {
+          if (person && person.name && !db.people.some((q) => q.name === person.name)) {
+            db.people.push(person);
+          }
+        }
+        db.checkins.sort((a, b) => a.at - b.at);
+        db.demo = false;
+        save();
+        $("dataNote").textContent = added + (added === 1 ? " entry" : " entries") + " came back. Anything already here was kept.";
+        render();
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    };
+    $("export").onclick = () => {
+      const lines = sorted().map((k) => new Date(k.at).toLocaleString() + "\n" + k.words + "\n");
+      download("rocky-record.txt", lines.join("\n"), "text/plain");
+    };
+    $("exportJson").onclick = () => download("rocky-record.json", JSON.stringify(db, null, 2), "application/json");
+    $("wipe").onclick = () => {
+      let ok = false;
+      ok = confirmOk("This deletes your whole record on this device. There is no undo.");
+      if (!ok) return;
+      setDb({ checkins: [], people: [], rules: [], acked: {}, demo: false, seen: true, sb: {} });
+      save();
+      route("write");
+      render();
+    };
+    $("demo").onclick = loadDemo;
+  }
+
+  // src/js/install.js
+  var deferred = null;
+  var onChange = () => {
   };
+  var canInstall = () => deferred !== null;
+  function wireInstall(repaint) {
+    onChange = repaint || onChange;
+    addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferred = e;
+      onChange();
+    });
+    addEventListener("appinstalled", () => {
+      deferred = null;
+      onChange();
+    });
+  }
+  async function promptInstall() {
+    if (!deferred) return;
+    const e = deferred;
+    deferred = null;
+    try {
+      await e.prompt();
+    } catch {
+    }
+    onChange();
+  }
+
+  // src/js/home.js
+  var composer = (ph) => '<div class="act"><div class="quietrow"><button class="primary big" id="openFocus">Write for a while</button></div><p class="orjust">or just a line</p><div class="compose"><input id="entry" placeholder="' + (ph || "what happened today?") + '" aria-label="write something"><button class="ghost" id="record">Keep it</button></div></div>';
+  var rehearse = () => {
+    const live = db.rules.filter((r2) => r2.active !== false);
+    if (!live.length) return "";
+    const r = live[0];
+    return '<div class="rehearse"><span class="cond">' + esc(describe(r)) + "</span> " + esc(r.written) + "</div>";
+  };
+  var recent = () => {
+    const c = sorted().slice(-5).reverse();
+    if (!c.length) return "";
+    return '<div class="mt-lg">' + c.map((k, i) => {
+      const nx = c[i + 1];
+      const gap = nx ? '<div class="gapnote">' + human((k.at - nx.at) / H) + " of quiet</div>" : "";
+      const nm = namedCount(k.words) ? ' <span class="named">named someone</span>' : "";
+      return '<div class="entry"><time>' + new Date(k.at).toLocaleDateString(
+        void 0,
+        { day: "numeric", month: "short" }
+      ) + "</time><div>" + esc(k.words) + nm + "</div></div>" + gap;
+    }).join("") + "</div>";
+  };
+  var installOffer = () => canInstall() ? '<div class="quietrow"><button class="ghost" id="installNow">Add rocky to your home screen</button></div><p class="homescreen">Then it is one tap away. It only notices a quiet stretch when you open it.</p>' : '<p class="homescreen">Add this to your home screen so it is one tap away. It only notices a quiet stretch when you open it.</p>';
+  function render() {
+    const ph = phase(), n = db.checkins.length, r = ratio(), host2 = $("step");
+    $("creature").setAttribute(
+      "class",
+      "creature" + (ph === "recall" ? " big recalling" : "")
+    );
+    let html = '<div class="step">';
+    if (ph === "empty" && !db.seen) {
+      html += '<p class="say">Rocky reads when you write, not what you write.</p><p class="then">It keeps what you type on this device, counts how long the quiet runs between entries, and compares the quiet you are in now against your own usual. Never against anyone else.</p>' + composer("start with a line about today") + '<div class="quietrow"><button class="textlink" id="seeMore">Show me what it does</button></div>';
+    } else if (ph === "empty") {
+      html += '<p class="say">Write a line about today.</p>' + composer("anything. a word is enough") + '<div class="tiles"><div class="tile"><b>it counts</b><span>When you wrote, and how long the quiet ran between entries.</span></div><div class="tile"><b>it compares</b><span>The current quiet against your own usual gap. Never against anyone else.</span></div><div class="tile"><b>it holds</b><span>One sentence you write in advance, handed back when you asked for it.</span></div></div>' + previewPanel() + '<div class="quietrow"><button class="ghost" id="demo2">Load this example</button><button class="textlink" id="whatIs">What it will never do</button></div>' + installOffer();
+    } else if (ph === "warming") {
+      const pips = Array.from({ length: NEED }, (_, i) => '<span class="pip' + (i < n ? " on" : "") + '"></span>').join("");
+      html += '<p class="say">' + n + " of " + NEED + ' entries.</p><div class="progress">' + pips + '</div><p class="then">About a week of entries is enough for Rocky to know what usual looks like for you. Until then it has nothing honest to say about your rhythm, so it says nothing.</p>' + composer("and today?") + score() + recent();
+    } else if (ph === "recall") {
+      const fired = due();
+      html += '<p class="say">The quiet has run ' + r.toFixed(1) + ' times longer than yours usually does.</p><p class="then">You normally go about ' + human(usual()) + " between entries. This one has run " + human(openGap()) + ".</p>" + fired.map((x) => '<div class="recall"><div class="eyebrow">you asked to be told</div><blockquote>' + esc(x.written) + '</blockquote><div class="quietrow rowstart mt"><button class="ghost" data-ack="' + x.id + '">Noted</button></div></div>').join("") + composer("write something now?") + score() + recent();
+    } else if (ph === "promise") {
+      html += '<div class="figure">' + r.toFixed(1) + 'x</div><p class="figmeaning">How long the current quiet has run, divided by your usual gap of ' + human(usual()) + '. A ratio, not a score.</p><p class="say mt-lg">Now write down what you want to be told.</p><p class="then">Optional. One sentence, in your words, for the days you are not thinking as clearly as you are now. Rocky holds it and hands it back when you asked it to. Skip it if you would rather just keep the record.</p><div class="quietrow"><button class="primary" id="toSetup">Write that sentence</button></div>' + score() + recent();
+    } else {
+      html += '<div class="figure">' + r.toFixed(1) + 'x</div><p class="figmeaning">How long the current quiet has run, divided by your usual gap of ' + human(usual()) + ". A ratio, not a score.</p>" + (r < 1.5 ? '<p class="then mt">You are writing about as often as you usually do.</p>' : "") + composer("and today?") + rehearse() + score() + recent();
+    }
+    if (!canStore) html += '<p class="note centred">This browser is not allowing storage, so nothing is being saved. It still works, but anything you write goes when you close the tab.</p>';
+    html += "</div>";
+    host2.innerHTML = html;
+    paintScore();
+    wireMain();
+    paintSheet();
+  }
+  function paintSheet() {
+    $("rules").innerHTML = db.rules.length ? db.rules.map((r) => '<div class="rule' + (r.active === false ? " off" : "") + '"><span class="cond">' + esc(describe(r)) + '</span><span class="said">' + esc(r.written) + '</span><button class="ghost" data-rule="' + r.id + '">' + (r.active === false ? "remove" : "revoke") + "</button></div>").join("") : '<p class="empty">Nothing written down yet. A sentence you write here is handed back when the condition you pick is met.</p>';
+    $("people").innerHTML = db.people.length ? db.people.map((p) => '<span class="chip"><b>' + esc(p.name) + "</b>" + (p.rel ? esc(p.rel) : "") + '<button data-drop="' + esc(p.name) + '" aria-label="remove">&times;</button></span>').join("") : '<p class="empty">No one registered, so nothing is counted about naming anyone.</p>';
+    $("dataNote").textContent = !canStore ? "This browser is not allowing storage, so nothing here is being saved. Anything you write will go when you close the tab." : db.checkins.length ? db.checkins.length + " entries, " + db.people.length + " people, " + db.rules.length + " rules on this device." : "Nothing stored yet.";
+    document.querySelectorAll("[data-rule]").forEach((b) => b.onclick = () => {
+      const r = db.rules.find((x) => x.id === b.dataset.rule);
+      if (!r) return;
+      if (r.active === false) db.rules = db.rules.filter((x) => x.id !== r.id);
+      else r.active = false;
+      save();
+      render();
+    });
+    document.querySelectorAll("[data-drop]").forEach((b) => b.onclick = () => {
+      db.people = db.people.filter((p) => p.name !== b.dataset.drop);
+      save();
+      render();
+    });
+  }
+  function strike() {
+    if (reduced) return;
+    const el = $("creature");
+    el.classList.remove("struck");
+    void el.getBoundingClientRect();
+    el.classList.add("struck");
+    setTimeout(() => el.classList.remove("struck"), 980);
+  }
+  function writeEntry() {
+    const el = $("entry");
+    if (!el) return;
+    const t = el.value.trim();
+    if (!t) return;
+    const at = Date.now();
+    db.checkins.push({ at, words: t });
+    syncCheckin(at);
+    armCommitment();
+    db.demo = false;
+    db.seen = true;
+    save();
+    render();
+    strike();
+  }
+  function wireMain() {
+    const rec = $("record"), ent = $("entry");
+    if (rec) rec.onclick = writeEntry;
+    if (ent) ent.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") writeEntry();
+    });
+    const inst = $("installNow");
+    if (inst) inst.onclick = promptInstall;
+    const sm = $("seeMore");
+    if (sm) sm.onclick = () => {
+      db.seen = true;
+      save();
+      render();
+    };
+    const d2 = $("demo2");
+    if (d2) d2.onclick = loadDemo;
+    const wi = $("whatIs");
+    if (wi) wi.onclick = () => route("never");
+    const of = $("openFocus");
+    if (of) of.onclick = openFocus;
+    const ent2 = $("entry");
+    const touch = matchMedia("(hover: none)").matches;
+    if (ent2 && db.checkins.length === 0 && !reduced && !touch) ent2.focus();
+    const ts = $("toSetup");
+    if (ts) ts.onclick = () => {
+      route("decide");
+      $("written").focus();
+    };
+    document.querySelectorAll("[data-ack]").forEach((b) => b.onclick = () => {
+      const c = sorted();
+      db.acked[b.dataset.ack] = c.length ? c[c.length - 1].at + 1 : Date.now();
+      save();
+      render();
+    });
+  }
+
+  // src/js/focus.js
+  var fMinutes = 10;
+  var fEndsAt = 0;
+  var fTick = null;
+  function fPaint() {
+    $("ftime").textContent = fEndsAt ? mmss(fEndsAt - Date.now()) : mmss(fMinutes * 6e4);
+    $("fwords").textContent = countWords($("ftext").value) + " words";
+  }
+  function fStop(note) {
+    if (fTick) {
+      clearInterval(fTick);
+      fTick = null;
+    }
+    fEndsAt = 0;
+    $("fend").hidden = false;
+    $("fendnote").textContent = note;
+    fPaint();
+  }
+  function buildDrift() {
+    const host2 = $("drift");
+    if (!host2 || reduced) return;
+    const seeds = [8, 21, 34, 47, 60, 73, 86, 15, 41, 68, 92, 29];
+    host2.innerHTML = seeds.map((s, i) => '<i style="left:' + s + "%;top:" + s * 7 % 90 + "%;animation-delay:" + (i * 2.1).toFixed(1) + 's"></i>').join("");
+  }
+  function openFocus() {
+    $("focus").classList.remove("running");
+    $("fcreature").hidden = true;
+    $("focus").classList.add("open");
+    document.body.style.overflow = "hidden";
+    $("fsetup").hidden = false;
+    $("ftext").hidden = true;
+    $("fend").hidden = true;
+    $("ftext").value = "";
+    fEndsAt = 0;
+    fPaint();
+  }
+  function closeFocus() {
+    $("focus").classList.remove("running");
+    if (fTick) {
+      clearInterval(fTick);
+      fTick = null;
+    }
+    fEndsAt = 0;
+    $("focus").classList.remove("open");
+    document.body.style.overflow = "";
+    render();
+  }
+  function wireFocus() {
+    $("durations").querySelectorAll("button").forEach((b) => b.onclick = () => {
+      fMinutes = parseInt(b.dataset.min, 10);
+      $("durations").querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      fPaint();
+    });
+    $("fstart").onclick = () => {
+      $("fsetup").hidden = true;
+      $("fcreature").hidden = false;
+      $("focus").classList.add("running");
+      $("ftext").hidden = false;
+      $("ftext").focus();
+      fEndsAt = Date.now() + fMinutes * 6e4;
+      fPaint();
+      fTick = setInterval(() => {
+        fPaint();
+        if (Date.now() >= fEndsAt) fStop("Time is up. Keep it or let it go.");
+      }, 500);
+    };
+    $("ftext").addEventListener("input", fPaint);
+    $("fleave").onclick = () => {
+      if (fEndsAt && countWords($("ftext").value) > 0) {
+        fStop("Stopped early. Keep it or let it go.");
+        return;
+      }
+      closeFocus();
+    };
+    $("fkeep").onclick = () => {
+      const words = $("ftext").value.trim();
+      if (words) {
+        const at = Date.now();
+        db.checkins.push({ at, words });
+        db.demo = false;
+        db.seen = true;
+        save();
+        syncCheckin(at);
+        armCommitment();
+        event("entry_kept");
+      }
+      closeFocus();
+    };
+    $("fdiscard").onclick = closeFocus;
+  }
+
+  // src/js/main.js
+  function wireGlobal() {
+    addEventListener("resize", paintScore);
+    addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && $("focus").classList.contains("open")) closeFocus();
+    });
+    $("home").onclick = () => {
+      if ($("focus").classList.contains("open")) {
+        closeFocus();
+        return;
+      }
+      route("write");
+    };
+  }
+  function registerWorker() {
+    if (typeof navigator !== "undefined" && navigator.serviceWorker && typeof location !== "undefined" && /^https?:/.test(location.protocol)) {
+      addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {
+        });
+      });
+    }
+  }
+  wireTheme();
+  wireFocus();
+  wireSheet();
+  wireDecide();
+  wireExecutor();
+  wireCircles();
+  wireAccount();
+  wireData();
+  wireGlobal();
+  wireInstall(render);
   applyTheme();
   buildDrift();
   render();
-  if (typeof navigator !== "undefined" && navigator.serviceWorker && typeof location !== "undefined" && /^https?:/.test(location.protocol)) {
-    addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => {
-      });
-    });
-  }
+  registerWorker();
   return __toCommonJS(main_exports);
 })();
-var { db, save, ratio, due, met, describe, namedCount, hoursSinceNamed, usual, paintScore, phase, render, countWords, mmss, applyTheme, paintHistory, showPane, PANE_TITLES, rpc, session, project, paintPair, shareable, canStore, confirmOk } = Rocky;
+var { db, save, ratio, due, met, describe, namedCount, hoursSinceNamed, usual, paintScore, phase, render, countWords, mmss, applyTheme, paintHistory, showPane, PANE_TITLES, rpc, session, project, paintPair, shareable, canStore, confirmOk, showPlace, route, PLACE_TITLES, canInstall } = Rocky;
 </script>
 </body>
 </html>

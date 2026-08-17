@@ -37,6 +37,15 @@
     --car-dim: #8C5C38; --ember: #E9BB74; --ember-soft: #E9BB741C; }
 
   * { box-sizing: border-box }
+  /* The browser's own `[hidden] { display: none }` sits in the user agent
+     sheet, so any author rule setting `display` outranks it and the attribute
+     silently stops hiding anything. That shipped twice: `.menu` (display:flex)
+     left the whole explore menu on screen under whichever pane you chose, and
+     `.creature.small` (display:block) put a stray creature on the writing
+     setup screen. Both were invisible to every JavaScript harness, because the
+     attribute was set correctly and CSS is the layer they cannot see. This
+     makes the attribute mean what it says, once, everywhere. */
+  [hidden] { display: none !important }
   body { margin: 0; background: var(--hull); color: var(--ink);
          font-family: var(--sans); font-size: 17px; line-height: 1.55;
          -webkit-font-smoothing: antialiased }
@@ -258,6 +267,7 @@
      forms, definitions, limits and evidence all at once, which reads as a wall to
      anyone who opened it while having a bad week. */
   .menu { display: flex; flex-direction: column; gap: .4rem; margin-top: 1.1rem }
+  .menu[hidden] { display: none }
   .menu button { text-align: left; background: var(--deck); border: 1px solid var(--line);
                  padding: .8rem .9rem; cursor: pointer; color: var(--ink) }
   .menu button:hover { border-color: var(--car-dim) }
@@ -477,6 +487,7 @@
       <button data-pane="help"><b>If you need someone now</b><span>Crisis lines, including India</span></button>
       <button data-pane="decide"><b>What you decided</b><span>Write one sentence for the days you are not thinking clearly</span></button>
       <button data-pane="pair"><b>Someone holding you to it</b><span>Pair with a person who cares about you, both ways</span></button>
+      <button data-pane="keep"><b>What keeping your record means</b><span>Read this before you turn it on</span></button>
       <button data-pane="circle"><b>A few people together</b><span>A small group who already know each other</span></button>
       <button data-pane="executor"><b>If you go quiet</b><span>Have your person told, on the terms you set</span></button>
       <button data-pane="people"><b>People you would tell</b><span>So it can count whether you have named anyone</span></button>
@@ -537,8 +548,7 @@
         <p class="note">Pairing is optional. Until you create an account here,
         nothing here ever leaves this device and everything else still works.
         Once paired, what travels to them is whether your weekly message went.
-        Keeping a record on the server is a separate switch below, off until
-        turned on.</p>
+        Keeping a record is a separate agreement below, off until turned on.</p>
         <button class="ghost" id="ownServer">Use your own server</button>
         <div id="serverBox" hidden>
           <div class="field" style="margin-top:.6rem">
@@ -554,30 +564,74 @@
         <div id="syncBox" hidden style="margin-top:1.1rem">
           <label class="note" style="display:flex;gap:.5rem;align-items:flex-start">
             <input type="checkbox" id="syncOn" style="margin-top:.25rem">
-            <span>Keep my record, and use it for research</span>
+            <span>Keep my record</span>
           </label>
           <label class="note" style="display:flex;gap:.5rem;align-items:flex-start;margin-top:.5rem">
             <input type="checkbox" id="usageOn" style="margin-top:.25rem">
-            <span>Record how I use the product. Never what I write.</span>
+            <span>Record how I use the product</span>
           </label>
           <p class="note" id="syncWhat"></p>
+          <p class="note" style="margin-top:.5rem">
+            <button class="ghost" id="openKeep" data-pane="keep">Read what keeping means</button>
+            <button class="ghost" id="openMeasured" data-pane="measured">Read what usage means</button>
+          </p>
           <div class="field" style="margin-top:.7rem">
             <input id="claimKey" placeholder="paste your key to get a record back"
                    aria-label="recovery key" style="flex:1;min-width:12rem">
             <button class="ghost" id="claimBtn">Get it back</button>
           </div>
-          <p class="note">Your browser clears this page's storage after a week or
-          two of not opening it, and a lost phone takes it too. With keeping on,
-          your record survives that. It also means what you wrote is on a server
-          that people who operate Rocky can read, and that it is used for research
-          into founder mental health. Before 2026-08-15 nothing you wrote could
-          leave this device at all; that changed, and this is where it says so.
-          Turning either switch off deletes what it covered.</p>
           <div class="field" style="margin-top:.7rem">
             <button class="ghost" id="forgetMe">Delete what is kept there</button>
           </div>
         </div>
 
+      </div>
+    </section>
+
+    <section class="pane" id="pane-keep" hidden>
+      <p class="lead">Read this before you turn keeping on. It is an agreement,
+      not a setting.</p>
+      <div class="card">
+        <dl class="terms">
+          <div><dt>What is kept</dt><dd>What you wrote and when, the rules you
+          set, the names on your roster, and the numbers Rocky worked out from
+          your record.</dd></div>
+          <div><dt>Who can read it</dt><dd>You, always, and you can take a copy
+          any time. The people who operate Rocky, to run the product and for
+          research into founder mental health. Nobody else: no employer access,
+          nothing sold or shared with an advertiser.</dd></div>
+          <div><dt>Where</dt><dd>Supabase's Mumbai region. No transfers out of
+          India.</dd></div>
+          <div><dt>What turning it off does</dt><dd>Deletes everything this
+          covers, in that action, not on a schedule and not after a retention
+          period.</dd></div>
+        </dl>
+        <p class="note">What to weigh: a record of what you wrote during a hard
+        period will exist on a server other people can read. Encryption does
+        not change that; Rocky's operators hold the keys. That is a real
+        disclosure, and it is your decision. With keeping off, the ratio, the
+        rules and the writing all still work, entirely on this device.</p>
+        <p class="note">You have the right to know what is held, get a copy,
+        correct it, withdraw consent, and have it erased, each a control in
+        the product rather than a request you send. Grievance contact:
+        abhishekvyas02032001@gmail.com.</p>
+      </div>
+    </section>
+
+    <section class="pane" id="pane-measured" hidden>
+      <p class="lead">A separate agreement from keeping your record. Off by
+      default, and off does not affect anything else.</p>
+      <div class="card">
+        <dl class="terms">
+          <div><dt>What is kept</dt><dd>Which screens you opened, when a
+          writing session started and whether it finished, which features you
+          used. Events come from a fixed list; there is no free text field, so
+          a word you wrote cannot end up here.</dd></div>
+          <div><dt>Who can read it</dt><dd>The people who operate Rocky, to
+          understand how the product is used. Nobody else.</dd></div>
+          <div><dt>What turning it off does</dt><dd>Deletes everything this
+          covers, immediately.</dd></div>
+        </dl>
       </div>
     </section>
 
@@ -647,10 +701,12 @@
     </section>
 
     <section class="pane" id="pane-record" hidden>
-      <p class="lead">Your entries are kept in this browser, on this device.
-      No analytics, ever. If you pair with someone, a server holds who you are
-      paired with and which weeks were kept, and nothing else. Clearing browser
-      data deletes what is here.</p>
+      <p class="lead">Your entries are kept in this browser, on this device,
+      always. If you pair with someone, a server holds who you are paired
+      with and which weeks were kept. If you turn keeping on, that server
+      holds your entries too, readable by whoever operates Rocky and used
+      for research: see "someone holding you to it" for what each switch does.
+      Clearing browser data deletes what is here regardless.</p>
       <div class="card">
         <div class="field">
           <button class="ghost" id="export">Export as text</button>
@@ -750,7 +806,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-let db = { checkins: [], people: [], rules: [], acked: {}, demo: false, seen: false };
+let db = { checkins: [], people: [], rules: [], acked: {}, demo: false, seen: false, sb: {} };
 
 // Storage can be unavailable: a sandboxed frame, private browsing, or a blocked
 // third party cookie policy. Reading was already guarded; writing was not, and an
@@ -1425,7 +1481,9 @@ const PANE_TITLES = {
   people: "people you would tell", record: "your record",
   words: "what the words mean", never: "what it will never do",
   borrow: "what this borrows", tested: "how it was tested",
-  pair: "someone holding you to it",
+  pair: "someone holding you to it", circle: "a few people together",
+  executor: "if you go quiet", history: "everything you have written",
+  keep: "what keeping your record means", measured: "what usage means",
 };
 
 function showMenu() {
@@ -1804,6 +1862,9 @@ $("ownServer").onclick = () => {
   $("serverBox").hidden = !$("serverBox").hidden;
 };
 
+$("openKeep").onclick = () => showPane("keep");
+$("openMeasured").onclick = () => showPane("measured");
+
 $("saveServer").onclick = async () => {
   db.sb = Object.assign({}, db.sb, {
     url: ($("sbUrl").value || "").trim(),
@@ -1883,7 +1944,7 @@ $("wipe").onclick = () => {
   let ok = false;
   ok = confirmOk("This deletes your whole record on this device. There is no undo.");
   if (!ok) return;
-  db = { checkins: [], people: [], rules: [], acked: {}, demo: false, seen: true };
+  db = { checkins: [], people: [], rules: [], acked: {}, demo: false, seen: true, sb: {} };
   save(); closeSheet(); render();
 };
 

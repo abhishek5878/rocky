@@ -534,17 +534,22 @@
       promise. The message goes to them, not here.</p>
       <div class="card">
         <div id="pairState"></div>
-        <div class="field" style="margin-top:.8rem">
-          <input id="sbUrl" placeholder="project address" aria-label="project address"
-                 style="flex:1;min-width:11rem">
-          <input id="sbKey" placeholder="public key" aria-label="public key"
-                 style="flex:1;min-width:9rem">
-          <button class="ghost" id="saveServer">Use this project</button>
+        <p class="note">Pairing is optional. Until you create an account here,
+        nothing here ever leaves this device and everything else still works.
+        Once paired, what travels to them is whether your weekly message went.
+        Keeping a record on the server is a separate switch below, off until
+        turned on.</p>
+        <button class="ghost" id="ownServer">Use your own server</button>
+        <div id="serverBox" hidden>
+          <div class="field" style="margin-top:.6rem">
+            <input id="sbUrl" placeholder="project address" aria-label="project address"
+                   style="flex:1;min-width:11rem">
+            <input id="sbKey" placeholder="public key" aria-label="public key"
+                   style="flex:1;min-width:9rem">
+            <button class="ghost" id="saveServer">Use this project</button>
+          </div>
+          <p class="note">Both values, or clear both to use Rocky's own.</p>
         </div>
-        <p class="note">Pairing is optional. With no project set, nothing here ever
-        leaves this device and everything else still works. Once paired, what
-        travels to them is whether your weekly message went. What is kept on the
-        server is a separate switch below, and it is off until you turn it on.</p>
 
         <div id="syncBox" hidden style="margin-top:1.1rem">
           <label class="note" style="display:flex;gap:.5rem;align-items:flex-start">
@@ -1053,10 +1058,9 @@ function paintSheet() {
 }
 
 /* ---------- the only code here that can reach a network ----------------
-   Pairing is opt in. With no server set, this page never makes a request, and
-   the whole product works. Once two people pair, exactly one class of fact
-   travels: whether the weekly message went. Never an entry, never a word, never
-   the ratio.
+   Pairing is opt in. The page ships knowing where its server is, and still
+   makes no request until a person creates an account, pairs, or turns keeping
+   on. Doing nothing sends nothing.
 
    The allowlist is the enforcement. callServer refuses to send a key that is not
    in it, so adding a field to a request is a deliberate act that has to pass this
@@ -1088,11 +1092,22 @@ function shareable(body) {
   return out;
 }
 
-const project = () => (db.sb && db.sb.url && db.sb.anon) ? db.sb : null;
+/* The project this page ships against. Both values are public by design: the
+   address names the server and the key names this app to it. Who may read or
+   write what is decided per session by the server's own row rules, never by
+   hiding these two strings. The override exists for people who run their own
+   project; it is used only when both fields are set. */
+const DEFAULT_PROJECT = {
+  url: "https://lbpucgueerbipylpjgef.supabase.co",
+  anon: "sb_publishable_fLuNr6sb0IajFcpZWMYxNA_HddKCtbK",
+};
+
+const project = () => (db.sb && db.sb.url && db.sb.anon)
+  ? { url: db.sb.url, anon: db.sb.anon }
+  : DEFAULT_PROJECT;
 
 async function callServer(path, body, token) {
   const sb = project();
-  if (!sb) throw new Error("no project set");
   const headers = { "Content-Type": "application/json", "apikey": sb.anon };
   if (token) headers["Authorization"] = "Bearer " + token;
   const res = await fetch(sb.url.replace(/\/$/, "") + path, {
@@ -1251,11 +1266,6 @@ function paintPair() {
   paintCircles();
   paintExecutor();
 
-  if (!project()) {
-    host.innerHTML = '<p class="note">No server set, so nothing leaves this device. '
-      + "Add one below to pair with someone.</p>";
-    return;
-  }
   if (!db.person_id) {
     host.innerHTML = '<div class="field"><input id="myName" placeholder="what should they see you as" '
       + 'aria-label="your display name" style="flex:1;min-width:11rem">'
@@ -1790,12 +1800,18 @@ $("forgetMe") && ($("forgetMe").onclick = async () => {
   } catch (err) { note(String(err.message || err)); }
 });
 
+$("ownServer").onclick = () => {
+  $("serverBox").hidden = !$("serverBox").hidden;
+};
+
 $("saveServer").onclick = async () => {
   db.sb = Object.assign({}, db.sb, {
     url: ($("sbUrl").value || "").trim(),
     anon: ($("sbKey").value || "").trim(),
   });
   save();
+  note((db.sb.url && db.sb.anon)
+    ? "Using the project you set." : "Using Rocky's own project.");
   await refreshShared();
   paintPair();
 };

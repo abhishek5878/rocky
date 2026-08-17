@@ -1,0 +1,18 @@
+{
+  "name": "rocky",
+  "short_name": "rocky",
+  "description": "A record of when you write, and how long the quiet runs between. It compares you to your own usual and to nobody else.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12161B",
+  "theme_color": "#0A0C10",
+  "categories": ["health", "lifestyle", "productivity"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

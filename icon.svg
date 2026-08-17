@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img"
+     aria-label="Rocky, layered carapace over five jointed limbs">
+  <!-- The same creature the product draws: a layered carapace over five
+       jointed limbs, no face and no eyes. Iconography only. Geometry is taken
+       from the page's own artwork so the icon and the thing it opens are
+       recognisably one object. Drawn on an opaque plate because a maskable
+       icon is composited onto a platform-chosen background. -->
+  <rect width="100" height="100" fill="#12161B"/>
+  <g transform="translate(50 50) scale(0.72) translate(-50 -50)">
+    <circle cx="50" cy="50" r="19" fill="none" stroke="#8C5C38" stroke-width="1.1" opacity=".55"/>
+    <circle cx="50" cy="50" r="27" fill="none" stroke="#8C5C38" stroke-width="1" opacity=".3"/>
+    <g fill="none" stroke="#C57C40" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M50 50 L31 35 L19 21"/>
+      <path d="M50 50 L69 35 L82 23"/>
+      <path d="M50 50 L75 55 L88 65"/>
+      <path d="M50 50 L54 74 L59 89"/>
+      <path d="M50 50 L27 62 L13 71"/>
+    </g>
+    <g fill="#E9BB74">
+      <circle cx="19" cy="21" r="2.6"/>
+      <circle cx="82" cy="23" r="2.6"/>
+      <circle cx="88" cy="65" r="2.6"/>
+      <circle cx="59" cy="89" r="2.6"/>
+      <circle cx="13" cy="71" r="2.6"/>
+    </g>
+    <path d="M50 31 L67 43 L60 63 L40 63 L33 43 Z" fill="#C57C40"/>
+    <path d="M50 38 L61 46 L57 58 L43 58 L39 46 Z" fill="#E9BB74" opacity=".85"/>
+  </g>
+</svg>

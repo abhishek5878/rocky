@@ -18,7 +18,7 @@
 // is the content hash of the page, written in by the build, and a new build
 // evicts every older cache on activate.
 
-const VERSION = "0af4ca44ba8e";
+const VERSION = "25780fa1baac";
 const CACHE = `rocky-${VERSION}`;
 const SHELL = ["./", "./rocky.html", "./manifest.json", "./icon.svg"];
 

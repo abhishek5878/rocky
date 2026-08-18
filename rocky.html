@@ -30,9 +30,9 @@
      never before. */
   :root {
     --hull: #0A0C10; --deck: #12161B; --panel: #171C22; --raise: #1E252C;
-    --ink: #EFE9DE; --dim: #9CA2A8; --faint: #697077; --line: #232A31;
-    --carapace: #C57C40; --car-soft: #C57C4020; --car-dim: #8C5C38;
-    --ember: #E9BB74; --ember-soft: #E9BB741C;
+    --ink: #EFE9DE; --dim: #A8AEB4; --faint: #8A9198; --line: #232A31;
+    --carapace: #D08A4C; --car-soft: #D08A4C20; --car-dim: #A06B41;
+    --ember: #E9BB74; --ember-soft: #E9BB741C; --deep: #E0A05F;
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
     --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -51,18 +51,20 @@
   }
   @media (prefers-color-scheme: light) {
     :root { --hull: #F1ECE4; --deck: #F9F6F1; --panel: #FFFFFF; --raise: #FFFFFF;
-      --ink: #17140F; --dim: #635C52; --faint: #948C80; --line: #DED7CA;
-      --carapace: #8C4B20; --car-soft: #8C4B2014; --car-dim: #A9713F;
-      --ember: #A06A28; --ember-soft: #A06A2812; }
+      --ink: #17140F; --dim: #565046; --faint: #6B6459; --line: #DED7CA;
+      --carapace: #8C4B20; --car-soft: #8C4B2014; --car-dim: #8A5A32;
+      --ember: #7A4D1A; --ember-soft: #A06A2812; --deep: #6B3714; }
   }
   :root[data-theme="light"] { --hull: #F1ECE4; --deck: #F9F6F1; --panel: #FFFFFF;
-    --raise: #FFFFFF; --ink: #17140F; --dim: #635C52; --faint: #948C80;
+    --raise: #FFFFFF; --ink: #17140F; --dim: #565046; --faint: #6B6459;
     --line: #DED7CA; --carapace: #8C4B20; --car-soft: #8C4B2014;
-    --car-dim: #A9713F; --ember: #A06A28; --ember-soft: #A06A2812; }
+    --car-dim: #8A5A32; --ember: #7A4D1A; --ember-soft: #A06A2812;
+    --deep: #6B3714; }
   :root[data-theme="dark"] { --hull: #0A0C10; --deck: #12161B; --panel: #171C22;
-    --raise: #1E252C; --ink: #EFE9DE; --dim: #9CA2A8; --faint: #697077;
-    --line: #232A31; --carapace: #C57C40; --car-soft: #C57C4020;
-    --car-dim: #8C5C38; --ember: #E9BB74; --ember-soft: #E9BB741C; }
+    --raise: #1E252C; --ink: #EFE9DE; --dim: #A8AEB4; --faint: #8A9198;
+    --line: #232A31; --carapace: #D08A4C; --car-soft: #D08A4C20;
+    --car-dim: #A06B41; --ember: #E9BB74; --ember-soft: #E9BB741C;
+    --deep: #E0A05F; }
 
   * { box-sizing: border-box }
   /* The browser's own `[hidden] { display: none }` sits in the user agent
@@ -77,12 +79,18 @@
   body { margin: 0; background: var(--hull); color: var(--ink);
          font-family: var(--sans); font-size: 17px; line-height: 1.55;
          -webkit-font-smoothing: antialiased }
-  .col { max-width: 34rem; margin: 0 auto; padding: 1.1rem 1.15rem 5.5rem; min-height: 100vh;
+  .col { max-width: 34rem; margin: 0 auto; padding: 1.1rem 1.15rem 7.2rem; min-height: 100vh;
          display: flex; flex-direction: column }
 
   .topbar { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem;
             position: relative; z-index: 2 }
-  .topbar b { font-family: var(--serif); font-weight: 400; font-size: 1.1rem }
+  .topbar b, .topbar h2 { font-family: var(--serif); font-weight: 400;
+                          font-size: 1.1rem; margin: 0 }
+  .wordmark { margin: 0; font-size: 1.1rem; font-weight: 400; line-height: 1 }
+  #sheetTitle:focus-visible { outline: 2px solid var(--carapace); outline-offset: 4px }
+  /* Reachable by a screen reader, absent for everyone else. */
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+             overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0 }
   .topbar .grow { flex: 1 }
   .iconbtn { background: none; border: 1px solid transparent; color: var(--faint);
              font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
@@ -98,11 +106,12 @@
      it. Decorative and 250px wide, it sat exactly over the theme control at a
      phone width and swallowed every tap on it, while leaving it clickable on a
      desktop where the column is wider. Nothing decorative takes a pointer. */
-  .stage::before { content: ""; position: absolute; width: 250px; height: 250px;
-    pointer-events: none;
+  .stage::before { content: ""; position: absolute; width: 120px; height: 120px;
+    pointer-events: none; transition: width .5s var(--ease), height .5s var(--ease);
     background: radial-gradient(circle, var(--car-soft) 0%, transparent 68%) }
-  .creature { width: 130px; height: 130px }
-  .creature.big { width: 168px; height: 168px }
+  .stage:has(.creature.big)::before { width: 250px; height: 250px }
+  .creature { width: 64px; height: 64px }
+  .creature.big { width: 156px; height: 156px }
   .plate-1 { fill: var(--car-dim) } .plate-2 { fill: var(--carapace) }
   .plate-3 { fill: var(--ember); opacity: .85 }
   .limb { stroke: var(--carapace); fill: none; stroke-width: 3.1; stroke-linecap: round;
@@ -159,7 +168,7 @@
 
   /* Ambient drift behind the creature. Slow enough to be atmosphere rather than
      motion, and gone entirely under reduced-motion. */
-  .drift { position: absolute; inset: -40px; pointer-events: none; overflow: hidden }
+  .drift { position: absolute; inset: 0; pointer-events: none; overflow: hidden }
   .drift i { position: absolute; width: 2px; height: 2px; border-radius: 50%;
              background: var(--carapace); opacity: .18 }
   .creature.small { width: 46px; height: 46px; margin: 0 auto .7rem; display: block;
@@ -211,10 +220,12 @@
     background: var(--hull); border-top: 1px solid var(--line);
   }
   .tabs button {
-    flex: 1 1 0; max-width: 8rem; background: none; border: 1px solid transparent;
-    border-radius: 8px; padding: .5rem .35rem; color: var(--faint);
-    font-size: .82rem; letter-spacing: .02em;
+    flex: 1 1 0; min-width: 0; max-width: 8rem; background: none;
+    border: 1px solid transparent; border-radius: 8px; padding: .5rem .2rem;
+    color: var(--faint); font-size: .82rem; letter-spacing: .02em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  @media (max-width: 22rem) { .tabs button { font-size: .74rem } }
   .tabs b { font-weight: 600 }
   .tabs button:hover { color: var(--ink) }
   .tabs button[aria-current="page"] { color: var(--carapace); background: var(--deck) }
@@ -248,6 +259,8 @@
                   margin-left: auto }
   .preview svg { display: block; width: 100%; height: 54px; margin-top: .7rem; opacity: .85 }
   .preview p { margin: .55rem 0 0; font-size: .82rem; color: var(--faint) }
+  .preview .quote { font-family: var(--serif); font-size: .95rem; color: var(--dim);
+                    line-height: 1.45 }
 
   .homescreen { margin-top: 1.2rem; font-size: .81rem; color: var(--faint);
                 text-align: center }
@@ -269,6 +282,15 @@
               font-size: .86rem; color: var(--dim) }
   .rehearse .cond { font-family: var(--mono); font-size: .72rem; color: var(--carapace);
                     margin-right: .4rem }
+
+  /* The example, said out loud. `db.demo` was written four times and read by
+     the interface zero times, so a worked example rendered as the reader's own
+     record with nothing on screen to say otherwise. */
+  .demo { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .7rem;
+          border: 1px dashed var(--car-dim); background: var(--car-soft);
+          padding: var(--s3) var(--s4); margin-bottom: var(--s4) }
+  .demo b { font-size: var(--t-body); color: var(--ink) }
+  .demo span { flex: 1 1 14rem; font-size: var(--t-small); color: var(--dim) }
   .progress { display: flex; gap: .3rem; justify-content: center; margin: .9rem 0 .2rem }
   .pip { width: 15px; height: 3px; border-radius: 2px; background: var(--line) }
   .pip.on { background: var(--carapace) }
@@ -284,7 +306,7 @@
   button { font: inherit; cursor: pointer; border-radius: 3px }
   .primary { background: var(--carapace); color: var(--hull); border: 1px solid var(--carapace);
              padding: .72rem 1.15rem; font-weight: 600; white-space: nowrap }
-  .primary:hover { background: var(--ember); border-color: var(--ember) }
+  .primary:hover { background: var(--deep); border-color: var(--deep) }
   .ghost { background: none; color: var(--dim); border: 1px solid var(--line);
            padding: .36rem .7rem; font-size: .8rem }
   .ghost:hover { color: var(--ink); border-color: var(--car-dim) }
@@ -294,6 +316,15 @@
               padding: 0 }
   .textlink:hover { color: var(--ink) }
   :focus-visible { outline: 2px solid var(--carapace); outline-offset: 2px }
+  @media (pointer: coarse) {
+    .ghost, .exit, .iconbtn, .helpdock, .seg button, .durations button,
+    .tabs button, .quietrow .textlink, .field button, .home, #hold, #addPerson {
+      min-height: 44px; min-width: 44px; display: inline-flex;
+      align-items: center; justify-content: center;
+    }
+    .chip button { min-width: 44px; min-height: 44px }
+    .chip { padding-left: .8rem }
+  }
   .quietrow { display: flex; gap: .6rem; justify-content: center; margin-top: 1rem;
               flex-wrap: wrap }
 
@@ -351,9 +382,10 @@
   /* A timed session. The only thing on screen is the field and how long is left.
      Deleting is never blocked: preventing someone from removing their own words
      during a bad moment would be coercive, and the person stays in charge here. */
-  .focus { position: fixed; inset: 0; background: var(--hull); z-index: 30; display: none }
+  .focus { position: fixed; inset: 0; background: var(--hull); z-index: 30; display: none;
+           overflow-y: auto; overscroll-behavior: contain }
   .focus.open { display: block }
-  .fcol { max-width: 40rem; margin: 0 auto; padding: 1rem 1.15rem 2rem; height: 100%;
+  .fcol { max-width: 40rem; margin: 0 auto; padding: 1rem 1.15rem 2rem; min-height: 100%;
           display: flex; flex-direction: column }
   .fbar { display: flex; align-items: baseline; gap: .8rem; margin-bottom: .8rem }
   .ftime { font-family: var(--mono); font-variant-numeric: tabular-nums;
@@ -441,7 +473,7 @@
           align-items: flex-start }
   .rule:first-of-type { border-top: none }
   .rule .cond { font-family: var(--mono); font-size: .71rem; color: var(--carapace);
-                white-space: nowrap; padding-top: .2rem }
+                padding-top: .2rem; flex: 0 1 11rem; min-width: 0 }
   .rule .said { flex: 1; font-size: .89rem }
   .rule.off .said, .rule.off .cond { opacity: .45 }
   dl.terms { margin: 0 }
@@ -463,7 +495,8 @@
   details { margin-top: 1.1rem; border-top: 1px solid var(--line); padding-top: .9rem }
   summary { cursor: pointer; font-size: .88rem; color: var(--dim) }
 
-  .crisis { margin-top: 1.8rem; padding-top: 1rem; border-top: 1px solid var(--line);
+  .crisis { margin-top: 1.8rem; padding: 1rem 4.75rem 0 0;
+            border-top: 1px solid var(--line);
             font-size: .8rem; color: var(--dim) }
   .crisis strong { color: var(--ink) }
   .crisis td { padding: .12rem .7rem .12rem 0; border: none; font-size: .8rem }
@@ -473,7 +506,7 @@
 
 <div class="col">
   <div class="topbar">
-    <button class="home" id="home">rocky</button>
+    <h1 class="wordmark"><button class="home" id="home">rocky</button></h1>
     <span class="grow"></span>
     <button class="iconbtn" id="theme" title="light, dark, or follow the system">theme</button>
   </div>
@@ -506,26 +539,24 @@
   </main>
 
   <div class="crisis">
-    <p><strong>rocky is not a crisis service and cannot recognise one.</strong>
-    If you are in danger or thinking about harming yourself, please contact a
-    crisis line or your local emergency number.</p>
-    <div class="overflow"><table>
-      <tr><td>India</td><td><strong>14416</strong>, Tele-MANAS, free, 24/7,
-        English and 20 Indian languages</td></tr>
-      <tr><td>US and Canada</td><td><strong>988</strong></td></tr>
-      <tr><td>UK and Ireland</td><td><strong>116 123</strong>, Samaritans</td></tr>
-      <tr><td>Elsewhere</td><td>findahelpline.com</td></tr>
-    </table></div>
-    <p>This is shown to everyone, every time. It is not here because of anything
-    rocky thinks about you. Rocky does not think anything about you.</p>
+    <p>rocky is not a crisis service and cannot recognise one. If you need
+    someone now, <button class="textlink" id="crisisHere">here are the crisis
+    lines</button>. That offer is shown to everyone, every time, and not because
+    of anything rocky thinks about you.</p>
   </div>
 </div>
 
 <!-- Crisis help, and the reason it is out here rather than in a bar: a control
      inside a screen is covered the moment another screen opens over it, which
      is what happened the first time this was built. It is not one of the four
-     places and never competes with them, and it is also the first item of
-     every place's index and a static panel on the first screen. -->
+     places and never competes with them. It is the first item of every
+     place's index, and the first screen carries a line that links straight to
+     it, which is what replaced the full table sitting above the fold. -->
+<!-- One live region for the whole product, present from load and filled a
+     frame later, because a region created and filled in the same tick is
+     never announced. `announce()` in src/js/notice.js is the only writer. -->
+<div id="live" class="sr-only" role="status" aria-live="polite"></div>
+
 <button class="helpdock" id="openHelp">help</button>
 
 <!-- Four places, and the whole of the navigation. It sits outside both
@@ -535,7 +566,7 @@
   <button data-place="write" aria-current="page"><b>Write</b></button>
   <button data-place="record"><b>Record</b></button>
   <button data-place="people"><b>People</b></button>
-  <button data-place="you"><b>You</b></button>
+  <button data-place="you"><b>Settings</b></button>
 </nav>
 
 <div class="focus" id="focus" role="dialog" aria-label="a timed writing session">
@@ -547,7 +578,7 @@
       <span class="fwords" id="fwords">0 words</span>
     </div>
     <div class="fsetup" id="fsetup">
-      <p class="say">Write for a while.</p>
+      <h2 class="say">Write for a while.</h2>
       <p class="then">Pick a length. The field is the only thing on screen until
       you stop. Nothing is saved unless you keep it.</p>
       <div class="durations" id="durations">
@@ -584,7 +615,7 @@
   <div class="col">
     <div class="topbar">
       <button class="exit" id="back" hidden>&larr; back</button>
-      <b id="sheetTitle">explore</b><span class="grow"></span>
+      <h2 id="sheetTitle">explore</h2><span class="grow"></span>
       <button class="exit" id="closeSheet">close</button>
     </div>
 
@@ -607,12 +638,12 @@
       <button data-pane="roster" data-place="people"><b>People you would name</b><span>So it can count whether you named anyone, never which one</span></button>
 
       <button data-pane="account" data-place="you"><b>Your account</b><span>The name your pair sees, and the key that gets it back</span></button>
-      <button data-pane="keep" data-place="you"><b>Keeping your record</b><span>The agreement and the switch, in one place</span></button>
-      <button data-pane="measured" data-place="you"><b>Recording how you use it</b><span>A separate agreement, off until you turn it on</span></button>
+      <button data-pane="keep" data-place="you"><b>Storing your record on the server</b><span>The agreement and the switch, in one place</span></button>
+      <button data-pane="measured" data-place="you"><b>How you use the product</b><span>A separate agreement, off until you turn it on</span></button>
       <button data-pane="server" data-place="you"><b>Use your own server</b><span>Advanced. Run this against a project you control.</span></button>
       <button data-goplace="about" data-place="you"><b>About rocky</b><span>What the words mean, what it will never do, how it was tested</span></button>
 
-      <button data-pane="words" data-place="about"><b>What the words mean</b><span>Five terms, plainly</span></button>
+      <button data-pane="words" data-place="about"><b>What the words mean</b><span>Five terms, plainly. Each is also defined where it is first used.</span></button>
       <button data-pane="never" data-place="about"><b>What it will never do</b><span>The list of limits</span></button>
       <button data-pane="borrow" data-place="about"><b>What this borrows</b><span>Where the ideas come from, and what this is not</span></button>
       <button data-pane="tested" data-place="about"><b>How it was tested</b><span>The numbers, including what failed</span></button>
@@ -624,6 +655,7 @@
       or your local emergency number.</p>
       <div class="card">
         <div class="overflow"><table>
+          <caption class="sr-only">Crisis lines by country.</caption>
           <tr><td>India</td><td><strong>14416</strong>, Tele-MANAS, free, 24/7,
             English and 20 Indian languages</td></tr>
           <tr><td>US and Canada</td><td><strong>988</strong></td></tr>
@@ -637,14 +669,15 @@
 
     <section class="pane" id="pane-decide" hidden>
       <p class="lead">One sentence, in your words, kept exactly as you write it and
-      handed back when the condition you pick is met. Optional.</p>
+      handed back when the condition you pick is met. Optional. A gap is the time
+      between one entry and the next; your usual gap is the average of your own.</p>
       <div class="card">
         <div class="seg" id="seg">
-          <button data-kind="unusual" aria-pressed="true">quiet runs long for me</button>
+          <button data-kind="unusual" aria-pressed="true">gap runs long for me</button>
           <button data-kind="days" aria-pressed="false">a set number of days</button>
           <button data-kind="naming" aria-pressed="false">named no one</button>
         </div>
-        <p class="ifthen"><span id="ifPreview">If the quiet runs 3x longer than my usual, then</span></p>
+        <p class="ifthen"><span id="ifPreview">If the gap runs 3x longer than my usual, then</span></p>
         <input id="written" aria-label="the sentence that is yours"
                placeholder="tell me I said to ring Priya rather than sit with it">
         <div class="field mt">
@@ -718,7 +751,7 @@
       <div class="card" id="syncBox">
         <label class="agree">
           <input type="checkbox" id="syncOn">
-          <span><b>Keep my record</b></span>
+          <span><b>Store my record on the server</b></span>
         </label>
         <p class="note" id="syncWhat"></p>
       </div>
@@ -749,20 +782,20 @@
     </section>
 
     <section class="pane" id="pane-measured" hidden>
-      <p class="lead">A separate agreement from keeping your record. Off by
+      <p class="lead">A separate agreement from storing your record. Off by
       default, and off does not affect anything else.</p>
       <div class="card">
         <label class="agree">
           <input type="checkbox" id="usageOn">
-          <span><b>Record how I use the product</b></span>
+          <span><b>Note when I keep an entry</b></span>
         </label>
       </div>
       <div class="card">
         <dl class="terms">
-          <div><dt>What is kept</dt><dd>Which screens you opened, when a
-          writing session started and whether it finished, which features you
-          used. Events come from a fixed list; there is no free text field, so
-          a word you wrote cannot end up here.</dd></div>
+          <div><dt>What is kept</dt><dd>One event, and there is only one in
+          the product: that you kept a piece of writing from a timed session,
+          and when. Nothing about what you wrote, and no other event exists to
+          turn on. Keeping a one line entry sends nothing at all.</dd></div>
           <div><dt>Who can read it</dt><dd>The people who operate Rocky, to
           understand how the product is used. Nobody else.</dd></div>
           <div><dt>What turning it off does</dt><dd>Deletes everything this
@@ -832,7 +865,7 @@
     </section>
 
     <section class="pane" id="pane-history" hidden>
-      <p class="lead">All of it, oldest first, with the quiet between entries.</p>
+      <p class="lead">All of it, oldest first, with the gap between entries.</p>
       <div id="historyList"></div>
     </section>
 
@@ -841,7 +874,7 @@
       always. If you pair with someone, a server holds who you are paired
       with and which weeks were kept. If you turn keeping on, that server
       holds your entries too, readable by whoever operates Rocky and used
-      for research: see "someone holding you to it" for what each switch does.
+      for research: see "storing your record on the server" for what that does.
       Clearing browser data deletes what is here regardless.</p>
       <div class="card">
         <div class="field">
@@ -861,13 +894,13 @@
       <dl class="terms">
         <div><dt>an entry</dt><dd>One line you wrote, and when. Rocky keeps the line
           for you. It does not read it.</dd></div>
-        <div><dt>quiet</dt><dd>The time between one entry and the next. Treated as
-          information, not as missing data.</dd></div>
-        <div><dt>your usual gap</dt><dd>The average quiet across your own record.
+        <div><dt>a gap</dt><dd>The time between one entry and the next. Treated as
+          information, not as missing data. This is what "gone quiet" measures.</dd></div>
+        <div><dt>your usual gap</dt><dd>The average gap across your own record.
           Yours only, never compared to anyone.</dd></div>
-        <div><dt>the multiple, written 3.4x</dt><dd>The current quiet divided by your
-          usual gap. A ratio, not a score, not a risk level, not a measure of how you
-          are doing.</dd></div>
+        <div><dt>the multiple, written 3.4x</dt><dd>The gap you are in now divided by
+          your usual gap. A ratio, not a score, not a risk level, not a measure of how
+          you are doing.</dd></div>
         <div><dt>what you decided</dt><dd>A sentence you wrote in advance, handed back
           when your condition is met. Rocky holds it and does not write one.</dd></div>
       </dl>
@@ -910,11 +943,13 @@
     </section>
 
     <section class="pane" id="pane-tested" hidden>
-      <p class="lead">Five methods on simulated records, scored causally, each
+      <p class="lead">Five methods and a fixed-rule baseline, on simulated records, scored causally, each
       compared against firing at random at the same volume. Precision is how often
       an alert landed inside a genuinely hard stretch.</p>
       <div class="card"><div class="overflow"><table>
-        <tr><th>Method</th><th class="n">Precision</th><th class="n">Random, same volume</th></tr>
+        <caption class="sr-only">Precision of each method against firing at random at
+        the same volume, on simulated records.</caption>
+        <tr><th scope="col">Method</th><th class="n" scope="col">Precision</th><th class="n" scope="col">Random, same volume</th></tr>
         <tr><td>Quiet divided by your usual gap</td><td class="n won">37%</td><td class="n">24%</td></tr>
         <tr><td>Departure score against your baseline</td><td class="n">26%</td><td class="n">25%</td></tr>
         <tr><td>Windowed trajectory model</td><td class="n">39%</td><td class="n">26%</td></tr>
@@ -959,6 +994,7 @@ var Rocky = (() => {
     PANE_TITLES: () => PANE_TITLES,
     PLACE_TITLES: () => PLACE_TITLES,
     applyTheme: () => applyTheme,
+    calibratedQuantile: () => calibratedQuantile,
     canInstall: () => canInstall,
     canStore: () => canStore,
     confirmOk: () => confirmOk,
@@ -966,15 +1002,22 @@ var Rocky = (() => {
     db: () => db,
     describe: () => describe,
     due: () => due,
+    gaps: () => gaps,
     hoursSinceNamed: () => hoursSinceNamed,
     met: () => met,
     mmss: () => mmss,
     namedCount: () => namedCount,
+    nextFiring: () => nextFiring,
+    normalisedEntropy: () => normalisedEntropy,
+    notable: () => notable,
+    notableAt: () => notableAt,
+    openGap: () => openGap,
     paintHistory: () => paintHistory,
     paintPair: () => paintPair,
     paintScore: () => paintScore,
     phase: () => phase,
     project: () => project,
+    quantileAt: () => quantileAt,
     ratio: () => ratio,
     render: () => render,
     route: () => route,
@@ -1079,13 +1122,55 @@ var Rocky = (() => {
     const g = gaps(), o = openGap();
     return g.length < MIN_GAPS || o === null || o <= 0 ? null : o / (g.reduce((a, b) => a + b, 0) / g.length);
   };
+  var ENTROPY_BINS = 6;
+  var BASE_QUANTILE = 0.5;
+  var MAX_QUANTILE = 0.95;
+  function normalisedEntropy(hours) {
+    const usable = hours.filter((x) => x > 0);
+    if (usable.length < 2) return 1;
+    const logs = usable.map(Math.log), low = Math.min(...logs), high = Math.max(...logs);
+    if (high === low) return 0;
+    const counts = new Array(ENTROPY_BINS).fill(0), width = (high - low) / ENTROPY_BINS;
+    for (const v of logs) counts[Math.min(Math.floor((v - low) / width), ENTROPY_BINS - 1)]++;
+    let e = 0;
+    for (const c of counts) {
+      if (!c) continue;
+      const p = c / logs.length;
+      e -= p * Math.log(p);
+    }
+    return e / Math.log(ENTROPY_BINS);
+  }
+  function quantileAt(values, q) {
+    const o = values.slice().sort((a, b) => a - b);
+    if (!o.length) return null;
+    if (o.length === 1) return o[0];
+    const pos = Math.min(Math.max(q, 0), 1) * (o.length - 1);
+    const lo = Math.floor(pos), hi = Math.min(lo + 1, o.length - 1), w = pos - lo;
+    return o[lo] * (1 - w) + o[hi] * w;
+  }
+  function calibratedQuantile() {
+    const g = gaps();
+    if (g.length < MIN_GAPS) return null;
+    const mean = g.reduce((a, b) => a + b, 0) / g.length;
+    if (!(mean > 0)) return null;
+    const q = BASE_QUANTILE + (MAX_QUANTILE - BASE_QUANTILE) * Math.min(Math.max(normalisedEntropy(g), 0), 1);
+    return quantileAt(g.map((x) => x / mean), q);
+  }
+  var notableAt = () => {
+    const t = calibratedQuantile();
+    return t === null ? null : Math.max(1, t);
+  };
+  var notable = () => {
+    const r = ratio(), t = notableAt();
+    return r !== null && t !== null && r >= t;
+  };
   var namedCount = (text) => db.people.filter((p) => new RegExp("\\b" + p.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(text)).length;
   var hoursSinceNamed = () => {
     const c = sorted();
     for (let i = c.length - 1; i >= 0; i--) if (namedCount(c[i].words) > 0) return (Date.now() - c[i].at) / H;
     return null;
   };
-  var describe = (r) => r.kind === "unusual" ? r.multiple + "x usual" : r.kind === "days" ? r.days + "d quiet" : r.days + "d unnamed";
+  var describe = (r) => r.kind === "unusual" ? "if the gap runs " + r.multiple + "x longer than my usual" : r.kind === "days" ? "if " + r.days + " days pass without an entry" : "if " + r.days + " days pass without naming anyone";
   var met = (r) => {
     if (r.kind === "unusual") {
       const x = ratio();
@@ -1103,9 +1188,8 @@ var Rocky = (() => {
     return db.rules.filter((r) => r.active !== false && met(r) && !(db.acked[r.id] && last <= db.acked[r.id]));
   };
   function phase() {
-    const n = db.checkins.length, r = ratio();
-    if (!n) return "empty";
-    if (r === null) return "warming";
+    if (!db.checkins.length) return "empty";
+    if (gaps().length < MIN_GAPS) return "warming";
     if (due().length) return "recall";
     if (!db.rules.length) return "promise";
     return "steady";
@@ -1115,7 +1199,7 @@ var Rocky = (() => {
   function score(host2) {
     const c = sorted();
     if (!c.length) return "";
-    return '<div class="score"><svg id="scoreSvg" role="img" aria-label="Your rhythm. Each mark is a time you wrote something. A mark sits lower when a long quiet came before it. The shaded stretch on the right is the quiet you are in now."></svg><div class="tip" id="tip"></div></div><div class="axis"><span id="axisFrom"></span><span>today</span></div><div class="scorehint">Each mark is a time you wrote. Lower means a longer quiet came before it. The shaded stretch is the quiet you are in now.</div>';
+    return '<div class="score"><svg id="scoreSvg" role="img" aria-label="Your rhythm. Each mark is a time you wrote something. A mark stands taller when a longer gap came before it. The shaded stretch on the right is the gap you are in now."></svg><div class="tip" id="tip"></div></div><div class="axis"><span id="axisFrom"></span><span>today</span></div><div class="scorehint">Each mark is a time you wrote. A taller mark means a longer gap came before it. The shaded stretch is the gap you are in now.</div>';
   }
   function paintScore() {
     const svg = $("scoreSvg"), c = sorted();
@@ -1144,7 +1228,7 @@ var Rocky = (() => {
     const g = gaps(), maxG = Math.max(...g, 1);
     c.forEach((k, i) => {
       const px = x(k.at), gap = i === 0 ? 0 : (k.at - c[i - 1].at) / H;
-      const top = 11 + Math.min(gap / maxG, 1) * (base - 27);
+      const top = base - 13 - Math.min(gap / maxG, 1) * (base - 27);
       const hue = namedCount(k.words) ? "var(--ember)" : "var(--carapace)";
       const grp = add("g", {
         class: reduced ? "" : "mark-in",
@@ -1165,26 +1249,35 @@ var Rocky = (() => {
       dot.setAttribute("r", 2.3);
       dot.setAttribute("fill", hue);
       grp.appendChild(dot);
+      const said = new Date(k.at).toLocaleDateString(void 0, { day: "numeric", month: "short" }) + (i ? ", after a gap of " + human(gap) : "") + ", " + k.words.slice(0, 30);
       const hit = add("rect", {
         x: px - 9,
         y: 0,
         width: 18,
         height: HT,
         fill: "transparent",
-        style: "cursor:pointer"
+        style: "cursor:pointer",
+        tabindex: "0",
+        role: "button",
+        "aria-label": said
       });
-      hit.addEventListener("pointerenter", () => {
+      const open = () => {
         const tip = $("tip");
         if (!tip) return;
-        tip.textContent = new Date(k.at).toLocaleDateString(void 0, { day: "numeric", month: "short" }) + (i ? ", after " + human(gap) + " quiet" : "") + ", " + k.words.slice(0, 30);
+        tip.textContent = said;
         tip.style.left = px + "px";
         tip.style.top = "0px";
         tip.classList.add("on");
-      });
-      hit.addEventListener("pointerleave", () => {
+      };
+      const shut = () => {
         const t = $("tip");
         if (t) t.classList.remove("on");
-      });
+      };
+      hit.addEventListener("pointerenter", open);
+      hit.addEventListener("pointerdown", open);
+      hit.addEventListener("focus", open);
+      hit.addEventListener("pointerleave", shut);
+      hit.addEventListener("blur", shut);
     });
     const af = $("axisFrom");
     if (af) af.textContent = new Date(from).toLocaleDateString(void 0, { day: "numeric", month: "short" });
@@ -1194,59 +1287,27 @@ var Rocky = (() => {
     const W = 520, HT = 54, base = HT - 8, maxG = Math.max(...sample);
     let marks = "", at = 0;
     const total = sample.reduce((a, b) => a + b, 0);
-    sample.forEach((g, i) => {
+    sample.forEach((g) => {
       at += g;
       const x = 3 + at / total * (W - 6);
-      const top = 6 + g / maxG * (base - 16);
+      const top = base - 6 - g / maxG * (base - 16);
       marks += '<line x1="' + x.toFixed(1) + '" y1="' + top.toFixed(1) + '" x2="' + x.toFixed(1) + '" y2="' + base + '" stroke="var(--carapace)" stroke-width="2" stroke-linecap="round"></line>';
     });
-    return '<div class="preview"><div class="head"><span class="tag">an example, after six weeks</span><span class="big">7.7x</span></div><svg viewBox="0 0 ' + W + " " + HT + '" role="img" aria-label="An example rhythm: regular entries, then a long quiet stretch at the right."><rect x="' + (3 + (1 - 12 / total) * (W - 6)).toFixed(1) + '" y="4" width="' + (12 / total * (W - 6)).toFixed(1) + '" height="' + (base - 4) + '" fill="var(--car-soft)"></rect><line x1="3" y1="' + base + '" x2="' + (W - 3) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1"></line>' + marks + "</svg><p>Someone who wrote most days, then went twelve days quiet. Their usual gap was about a day and a half, so the current quiet reads 7.7 times longer than theirs normally runs.</p></div>";
-  }
-
-  // src/js/decide.js
-  var kind = "unusual";
-  function ifPreview() {
-    const n = parseFloat($("amount").value) || 0;
-    const clause = kind === "unusual" ? "the quiet runs " + n + "x longer than my usual" : kind === "days" ? "I have not written for " + n + " days" : "I have not named anyone for " + n + " days";
-    $("ifPreview").textContent = "If " + clause + ", then";
-  }
-  function wireDecide() {
-    $("seg").querySelectorAll("button").forEach((b) => b.onclick = () => {
-      kind = b.dataset.kind;
-      $("seg").querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
-      const amt = $("amount");
-      if (kind === "unusual") {
-        $("amtLabel").textContent = "how many times my usual gap";
-        amt.value = 3;
-        amt.min = 2;
-      } else if (kind === "days") {
-        $("amtLabel").textContent = "after how many days of quiet";
-        amt.value = 11;
-        amt.min = 1;
-      } else {
-        $("amtLabel").textContent = "after how many days without naming anyone";
-        amt.value = 7;
-        amt.min = 1;
-      }
-      ifPreview();
-    });
-    $("amount").addEventListener("input", ifPreview);
-    $("hold").onclick = () => {
-      const written = $("written").value.trim(), n = parseFloat($("amount").value);
-      if (!written) {
-        $("written").focus();
-        return;
-      }
-      if (kind === "unusual" ? !(n > 1) : !(n > 0)) return;
-      const id = Math.random().toString(16).slice(2, 8);
-      db.rules.push(kind === "unusual" ? { id, written, kind, multiple: n, active: true } : { id, written, kind, days: n, active: true });
-      $("written").value = "";
-      save();
-      render();
-    };
+    return '<div class="preview"><div class="head"><span class="tag">an example, five weeks of someone else</span><span class="big">7.7x</span></div><svg viewBox="0 0 ' + W + " " + HT + '" role="img" aria-label="An example rhythm: regular entries, then a long gap at the right."><rect x="' + (3 + (1 - 12 / total) * (W - 6)).toFixed(1) + '" y="4" width="' + (12 / total * (W - 6)).toFixed(1) + '" height="' + (base - 4) + '" fill="var(--car-soft)"></rect><line x1="3" y1="' + base + '" x2="' + (W - 3) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1"></line>' + marks + '</svg><p class="quote">"customer churned. the big one"<br>"told Priya it is fine. it is mostly fine"</p><p>Someone who wrote most days, then stopped for twelve. Each mark is one of their entries, standing taller where a longer gap came before it, and the shaded stretch at the right is the twelve days. Their usual gap was about a day and a half, so that stretch reads 7.7 times longer than theirs normally runs.</p></div>';
   }
 
   // src/js/notice.js
+  var pending = null;
+  function announce(msg) {
+    const live = $("live");
+    if (!live) return;
+    if (pending) clearTimeout(pending);
+    live.textContent = "";
+    pending = setTimeout(() => {
+      live.textContent = msg;
+      pending = null;
+    }, 60);
+  }
   function host() {
     const pane = document.querySelector(".pane:not([hidden])");
     if (!pane) return null;
@@ -1254,7 +1315,7 @@ var Rocky = (() => {
     if (!box) {
       box = document.createElement("div");
       box.className = "notices";
-      box.setAttribute("role", "status");
+      box.setAttribute("role", "note");
       pane.insertBefore(box, pane.firstChild);
     }
     return box;
@@ -1266,6 +1327,7 @@ var Rocky = (() => {
   function notice(msg) {
     const box = host();
     if (box) box.innerHTML = '<p class="said-it">' + esc(msg) + "</p>";
+    announce(msg);
   }
   function reason(err) {
     const raw = String(err && err.message || err || "");
@@ -1307,10 +1369,54 @@ var Rocky = (() => {
       clearNotices();
       again();
     };
+    announce(doing + " did not finish. " + r.why + " " + r.still);
   }
   function empty(id, msg) {
     const el = $(id);
     if (el) el.innerHTML = '<p class="empty">' + esc(msg) + "</p>";
+  }
+
+  // src/js/decide.js
+  var kind = "unusual";
+  function ifPreview() {
+    const n = parseFloat($("amount").value) || 0;
+    const clause = kind === "unusual" ? "the gap runs " + n + "x longer than my usual" : kind === "days" ? "I have not written for " + n + " days" : "I have not named anyone for " + n + " days";
+    $("ifPreview").textContent = "If " + clause + ", then";
+  }
+  function wireDecide() {
+    $("seg").querySelectorAll("button").forEach((b) => b.onclick = () => {
+      kind = b.dataset.kind;
+      $("seg").querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      const amt = $("amount");
+      if (kind === "unusual") {
+        $("amtLabel").textContent = "how many times my usual gap";
+        amt.value = 3;
+        amt.min = 2;
+      } else if (kind === "days") {
+        $("amtLabel").textContent = "after how many days without an entry";
+        amt.value = 11;
+        amt.min = 1;
+      } else {
+        $("amtLabel").textContent = "after how many days without naming anyone";
+        amt.value = 7;
+        amt.min = 1;
+      }
+      ifPreview();
+    });
+    $("amount").addEventListener("input", ifPreview);
+    $("hold").onclick = () => {
+      const written = $("written").value.trim(), n = parseFloat($("amount").value);
+      if (!written) {
+        $("written").focus();
+        return;
+      }
+      if (kind === "unusual" ? !(n > 1) : !(n > 0)) return;
+      const id = Math.random().toString(16).slice(2, 8);
+      db.rules.push(kind === "unusual" ? { id, written, kind, multiple: n, active: true } : { id, written, kind, days: n, active: true });
+      $("written").value = "";
+      save();
+      render();
+    };
   }
 
   // src/js/history.js
@@ -1324,7 +1430,7 @@ var Rocky = (() => {
     }
     host2.innerHTML = c.map((k, i) => {
       const prev = c[i - 1];
-      const gap = prev ? '<div class="histgap' + ((k.at - prev.at) / H > 24 * 4 ? " long" : "") + '">' + human((k.at - prev.at) / H) + " of quiet</div>" : "";
+      const gap = prev ? '<div class="histgap' + ((k.at - prev.at) / H > 24 * 4 ? " long" : "") + '">gap of ' + human((k.at - prev.at) / H) + "</div>" : "";
       return gap + '<div class="hist"><time>' + new Date(k.at).toLocaleString(void 0, {
         day: "numeric",
         month: "short",
@@ -1434,10 +1540,10 @@ var Rocky = (() => {
     if (shared.error) failure("Reading your pairs", shared.error, refresh);
     const pairs = shared.pairs || [];
     let html = pairs.map((p) => {
-      const yours = p.you_last_sent ? "you last sent " + human((Date.now() / 1e3 - p.you_last_sent) / 3600) + " ago" : "you have not sent one yet";
+      const yours2 = p.you_last_sent ? "you last sent " + human((Date.now() / 1e3 - p.you_last_sent) / 3600) + " ago" : "you have not sent one yet";
       const theirs = p.they_last_sent ? "they last sent " + human((Date.now() / 1e3 - p.they_last_sent) / 3600) + " ago" : "they have not sent one yet";
       const late = p.you_overdue_seconds > 0 ? '<div class="histgap long">your week is ' + overdueWeeks(p.you_overdue_seconds) + " past</div>" : "";
-      return '<div class="rule"><span class="said"><b>' + esc(p.with) + '</b><br><span class="note">' + yours + ". " + theirs + "</span>" + late + '</span><button class="ghost" data-sent="' + p.pair_id + '">I sent it</button><button class="ghost" data-endpair="' + p.pair_id + '">End</button></div>';
+      return '<div class="rule"><span class="said"><b>' + esc(p.with) + '</b><br><span class="note">' + yours2 + ". " + theirs + "</span>" + late + '</span><button class="ghost" data-sent="' + p.pair_id + '">I sent it</button><button class="ghost" data-endpair="' + p.pair_id + '">End</button></div>';
     }).join("");
     html += '<div class="field mt-lg"><button class="ghost" id="makeInvite">Invite someone</button><input id="pairCode" placeholder="or paste their code" aria-label="invite code" class="wide"><button class="ghost" id="acceptInvite">Accept</button></div><p class="note">Either of you can end a pair alone, at once, without saying why. The shared history goes with it.</p>';
     host2.innerHTML = html;
@@ -1575,7 +1681,7 @@ var Rocky = (() => {
       return last.at + u * rule.multiple * H;
     }
     if (rule.kind === "days") return last.at + rule.days * DAY;
-    if (rule.kind === "named") {
+    if (rule.kind === "naming" || rule.kind === "named") {
       const h = hoursSinceNamed();
       if (h === null) return null;
       return Date.now() + (rule.days * 24 - h) * H;
@@ -1866,8 +1972,8 @@ var Rocky = (() => {
     executor: "tell someone if you go quiet",
     roster: "people you would name",
     account: "your account",
-    keep: "keeping your record",
-    measured: "recording how you use it",
+    keep: "storing your record on the server",
+    measured: "how you use the product",
     server: "use your own server",
     words: "what the words mean",
     never: "what it will never do",
@@ -1878,10 +1984,11 @@ var Rocky = (() => {
     write: "rocky",
     record: "your record",
     people: "people",
-    you: "you",
+    you: "settings",
     about: "about rocky"
   };
   var HOME = "write";
+  var settled = false;
   var items = () => Array.from($("menu").querySelectorAll("button"));
   function placeOfPane(name) {
     const b = items().find((x) => x.dataset.pane === name);
@@ -1890,13 +1997,49 @@ var Rocky = (() => {
   }
   var isPlace = (name) => Object.prototype.hasOwnProperty.call(PLACE_TITLES, name);
   var isPane = (name) => Object.prototype.hasOwnProperty.call(PANE_TITLES, name);
+  var returnFocusTo = null;
+  var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+  function focusablesIn(el) {
+    return Array.from(el.querySelectorAll(FOCUSABLE)).filter((n) => {
+      if (n.hidden || n.closest("[hidden]")) return false;
+      const r = n.getBoundingClientRect();
+      return r.width > 0 || r.height > 0;
+    });
+  }
+  function trapTab(el, e) {
+    if (e.key !== "Tab") return;
+    const f = focusablesIn(el);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
   function openSheetEl() {
-    $("sheet").classList.add("open");
+    const sheet = $("sheet");
+    const wasOpen = sheet.classList.contains("open");
+    if (!wasOpen) returnFocusTo = document.activeElement;
+    sheet.classList.add("open");
+    sheet.setAttribute("aria-modal", "true");
     document.body.style.overflow = "hidden";
+    if (!wasOpen) {
+      const title = $("sheetTitle");
+      title.setAttribute("tabindex", "-1");
+      title.focus();
+    }
   }
   function closeSheet() {
-    $("sheet").classList.remove("open");
+    const sheet = $("sheet");
+    const wasOpen = sheet.classList.contains("open");
+    sheet.classList.remove("open");
+    sheet.removeAttribute("aria-modal");
     document.body.style.overflow = "";
+    if (wasOpen && returnFocusTo && document.contains(returnFocusTo)) returnFocusTo.focus();
+    returnFocusTo = null;
   }
   function hideAllPanes() {
     Object.keys(PANE_TITLES).forEach((k) => {
@@ -1919,6 +2062,7 @@ var Rocky = (() => {
     $("back").hidden = place !== "about";
     if (place === "about") setBackTo("you");
     $("sheetTitle").textContent = PLACE_TITLES[place];
+    if (settled) announce(PLACE_TITLES[place]);
     items().forEach((b) => {
       const p = b.dataset.place;
       b.hidden = !(p === place || p === "all" && place !== HOME);
@@ -1937,6 +2081,7 @@ var Rocky = (() => {
     $("back").hidden = false;
     setBackTo(place);
     $("sheetTitle").textContent = PANE_TITLES[name];
+    if (settled) announce(PANE_TITLES[name]);
     hideAllPanes();
     $("pane-" + name).hidden = false;
     markTab(place === "about" ? "you" : place);
@@ -1971,7 +2116,13 @@ var Rocky = (() => {
       if (b.dataset.goplace) route(b.dataset.goplace);
       else route(b.dataset.pane);
     });
-    $("tabs").querySelectorAll("button").forEach((b) => b.onclick = () => route(b.dataset.place));
+    $("tabs").querySelectorAll("button").forEach((b) => b.onclick = () => {
+      route(b.dataset.place);
+      if (b.dataset.place === HOME) {
+        const entry = $("entry");
+        if (entry) entry.focus();
+      }
+    });
     $("back").onclick = () => {
       const now = current();
       if (now === "about") {
@@ -1981,12 +2132,21 @@ var Rocky = (() => {
       route(isPane(now) ? placeOfPane(now) : HOME);
     };
     $("openHelp").onclick = () => route("help");
+    const here = $("crisisHere");
+    if (here) here.onclick = () => route("help");
     $("closeSheet").onclick = () => route(HOME);
     addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && $("sheet").classList.contains("open")) route(HOME);
+      const sheet = $("sheet");
+      if (!sheet.classList.contains("open")) return;
+      if (e.key === "Escape") {
+        route(HOME);
+        return;
+      }
+      trapTab(sheet, e);
     });
     addEventListener("hashchange", () => apply(current()));
     apply(current());
+    settled = true;
   }
 
   // src/js/data.js
@@ -2140,19 +2300,25 @@ var Rocky = (() => {
   }
 
   // src/js/home.js
-  var composer = (ph) => '<div class="act"><div class="quietrow"><button class="primary big" id="openFocus">Write for a while</button></div><p class="orjust">or just a line</p><div class="compose"><input id="entry" placeholder="' + (ph || "what happened today?") + '" aria-label="write something"><button class="ghost" id="record">Keep it</button></div></div>';
+  var composer = (ph, lineFirst) => '<div class="act">' + (lineFirst ? '<div class="compose"><input id="entry" placeholder="' + (ph || "what happened today?") + '" aria-label="write something"><button class="primary" id="record">Keep it</button></div><p class="orjust">or set a timer and write for a while</p><div class="quietrow"><button class="ghost" id="openFocus">Write for a while</button></div>' : '<div class="quietrow"><button class="primary big" id="openFocus">Write for a while</button></div><p class="orjust">or just a line</p><div class="compose"><input id="entry" placeholder="' + (ph || "what happened today?") + '" aria-label="write something"><button class="ghost" id="record">Keep it</button></div>') + "</div>";
+  var You = () => db.demo ? "They" : "You";
+  var you = () => db.demo ? "they" : "you";
+  var your = () => db.demo ? "their" : "your";
+  var yours = () => db.demo ? "theirs" : "yours";
+  var demoBanner = () => db.demo ? `<div class="demo"><b>An example, not your record.</b><span>Six weeks of someone else's entries, loaded so the instrument is visible before you have a record of your own.</span><button class="ghost" id="leaveDemo">Clear it and start mine</button></div>` : "";
   var rehearse = () => {
     const live = db.rules.filter((r2) => r2.active !== false);
     if (!live.length) return "";
     const r = live[0];
     return '<div class="rehearse"><span class="cond">' + esc(describe(r)) + "</span> " + esc(r.written) + "</div>";
   };
+  var hero = () => notable() ? '<div class="figure">' + ratio().toFixed(1) + 'x</div><p class="figmeaning">The gap ' + you() + " are in now, divided by " + your() + " usual gap of " + human(usual()) + ". A gap is the time between one entry and the next. A ratio, not a score.</p>" : '<div class="figure">' + db.checkins.length + '</div><p class="figmeaning">Entries ' + you() + " have kept. " + You() + " usually go about " + human(usual()) + " between them" + (openGap() * 60 >= 1 ? ", and this one has run " + human(openGap()) : "") + ".</p>";
   var recent = () => {
     const c = sorted().slice(-5).reverse();
     if (!c.length) return "";
     return '<div class="mt-lg">' + c.map((k, i) => {
       const nx = c[i + 1];
-      const gap = nx ? '<div class="gapnote">' + human((k.at - nx.at) / H) + " of quiet</div>" : "";
+      const gap = nx ? '<div class="gapnote">gap of ' + human((k.at - nx.at) / H) + "</div>" : "";
       const nm = namedCount(k.words) ? ' <span class="named">named someone</span>' : "";
       return '<div class="entry"><time>' + new Date(k.at).toLocaleDateString(
         void 0,
@@ -2160,35 +2326,41 @@ var Rocky = (() => {
       ) + "</time><div>" + esc(k.words) + nm + "</div></div>" + gap;
     }).join("") + "</div>";
   };
-  var installOffer = () => canInstall() ? '<div class="quietrow"><button class="ghost" id="installNow">Add rocky to your home screen</button></div><p class="homescreen">Then it is one tap away. It only notices a quiet stretch when you open it.</p>' : '<p class="homescreen">Add this to your home screen so it is one tap away. It only notices a quiet stretch when you open it.</p>';
+  var installOffer = () => canInstall() ? '<div class="quietrow"><button class="ghost" id="installNow">Add rocky to your home screen</button></div><p class="homescreen">Then it is one tap away. It only notices a long gap when you open it.</p>' : '<p class="homescreen">Add this to your home screen so it is one tap away. It only notices a long gap when you open it.</p>';
   function render() {
-    const ph = phase(), n = db.checkins.length, r = ratio(), host2 = $("step");
+    const ph = phase(), n = db.checkins.length, host2 = $("step");
     $("creature").setAttribute(
       "class",
       "creature" + (ph === "recall" ? " big recalling" : "")
     );
-    let html = '<div class="step">';
+    let html = '<div class="step">' + demoBanner();
     if (ph === "empty" && !db.seen) {
-      html += '<p class="say">Rocky reads when you write, not what you write.</p><p class="then">It keeps what you type on this device, counts how long the quiet runs between entries, and compares the quiet you are in now against your own usual. Never against anyone else.</p>' + composer("start with a line about today") + '<div class="quietrow"><button class="textlink" id="seeMore">Show me what it does</button></div>';
+      html += '<h2 class="say">Write a line. Rocky keeps the time between them.</h2><p class="then">The time between one entry and the next is a gap. Rocky measures yours against your own usual, never against anyone else, and keeps what you type on this device.</p>' + composer("start with a line about today", true) + '<div class="quietrow"><button class="textlink" id="seeMore">Show me what it does</button></div>';
     } else if (ph === "empty") {
-      html += '<p class="say">Write a line about today.</p>' + composer("anything. a word is enough") + '<div class="tiles"><div class="tile"><b>it counts</b><span>When you wrote, and how long the quiet ran between entries.</span></div><div class="tile"><b>it compares</b><span>The current quiet against your own usual gap. Never against anyone else.</span></div><div class="tile"><b>it holds</b><span>One sentence you write in advance, handed back when you asked for it.</span></div></div>' + previewPanel() + '<div class="quietrow"><button class="ghost" id="demo2">Load this example</button><button class="textlink" id="whatIs">What it will never do</button></div>' + installOffer();
+      html += '<h2 class="say">Write a line about today.</h2>' + composer("anything. a word is enough", true) + '<div class="tiles"><div class="tile"><b>it counts</b><span>When you wrote, and the gap between one entry and the next.</span></div><div class="tile"><b>it compares</b><span>The gap you are in now against your own usual gap. Never against anyone else.</span></div><div class="tile"><b>it holds</b><span>One sentence you write in advance, handed back when you asked for it.</span></div></div>' + previewPanel() + '<div class="quietrow"><button class="ghost" id="demo2">Load this example</button><button class="textlink" id="whatIs">What it will never do</button></div>' + installOffer();
     } else if (ph === "warming") {
       const pips = Array.from({ length: NEED }, (_, i) => '<span class="pip' + (i < n ? " on" : "") + '"></span>').join("");
-      html += '<p class="say">' + n + " of " + NEED + ' entries.</p><div class="progress">' + pips + '</div><p class="then">About a week of entries is enough for Rocky to know what usual looks like for you. Until then it has nothing honest to say about your rhythm, so it says nothing.</p>' + composer("and today?") + score() + recent();
+      html += '<h2 class="say">' + n + " of " + NEED + ' entries.</h2><div class="progress">' + pips + '</div><p class="then">About a week of entries is enough for Rocky to know what usual looks like for ' + you() + ". Until then it has nothing honest to say about " + your() + " rhythm, so it says nothing.</p>" + composer("and today?") + score() + recent();
     } else if (ph === "recall") {
       const fired = due();
-      html += '<p class="say">The quiet has run ' + r.toFixed(1) + ' times longer than yours usually does.</p><p class="then">You normally go about ' + human(usual()) + " between entries. This one has run " + human(openGap()) + ".</p>" + fired.map((x) => '<div class="recall"><div class="eyebrow">you asked to be told</div><blockquote>' + esc(x.written) + '</blockquote><div class="quietrow rowstart mt"><button class="ghost" data-ack="' + x.id + '">Noted</button></div></div>').join("") + composer("write something now?") + score() + recent();
+      html += '<h2 class="say">' + (notable() ? "This gap has run " + ratio().toFixed(1) + " times longer than " + yours() + " usually does." : "A sentence " + (db.demo ? "they" : "you") + " wrote is being handed back.") + '</h2><p class="then">' + You() + " normally go about " + human(usual()) + " between entries. This one has run " + human(openGap()) + ".</p>" + fired.map((x) => '<div class="recall"><div class="eyebrow">you asked to be told</div><blockquote>' + esc(x.written) + '</blockquote><div class="quietrow rowstart mt"><button class="ghost" data-ack="' + x.id + '">Noted</button></div></div>').join("") + composer("write something now?") + score() + recent();
     } else if (ph === "promise") {
-      html += '<div class="figure">' + r.toFixed(1) + 'x</div><p class="figmeaning">How long the current quiet has run, divided by your usual gap of ' + human(usual()) + '. A ratio, not a score.</p><p class="say mt-lg">Now write down what you want to be told.</p><p class="then">Optional. One sentence, in your words, for the days you are not thinking as clearly as you are now. Rocky holds it and hands it back when you asked it to. Skip it if you would rather just keep the record.</p><div class="quietrow"><button class="primary" id="toSetup">Write that sentence</button></div>' + score() + recent();
+      html += hero() + '<h2 class="say mt-lg">Now write down what you want to be told.</h2><p class="then">Optional. One sentence, in your words, for the days you are not thinking as clearly as you are now. Rocky holds it and hands it back when you asked it to. Skip it if you would rather just keep the record.</p><div class="quietrow"><button class="primary" id="toSetup">Write that sentence</button></div>' + score() + recent();
     } else {
-      html += '<div class="figure">' + r.toFixed(1) + 'x</div><p class="figmeaning">How long the current quiet has run, divided by your usual gap of ' + human(usual()) + ". A ratio, not a score.</p>" + (r < 1.5 ? '<p class="then mt">You are writing about as often as you usually do.</p>' : "") + composer("and today?") + rehearse() + score() + recent();
+      html += hero() + composer("and today?") + rehearse() + score() + recent();
     }
     if (!canStore) html += '<p class="note centred">This browser is not allowing storage, so nothing is being saved. It still works, but anything you write goes when you close the tab.</p>';
     html += "</div>";
+    const had = document.activeElement;
+    const hadId = had && had.id && host2.contains(had) ? had.id : null;
     host2.innerHTML = html;
     paintScore();
     wireMain();
     paintSheet();
+    if (hadId) {
+      const again = $(hadId);
+      if (again) again.focus();
+    }
   }
   function paintSheet() {
     $("rules").innerHTML = db.rules.length ? db.rules.map((r) => '<div class="rule' + (r.active === false ? " off" : "") + '"><span class="cond">' + esc(describe(r)) + '</span><span class="said">' + esc(r.written) + '</span><button class="ghost" data-rule="' + r.id + '">' + (r.active === false ? "remove" : "revoke") + "</button></div>").join("") : '<p class="empty">Nothing written down yet. A sentence you write here is handed back when the condition you pick is met.</p>';
@@ -2230,6 +2402,8 @@ var Rocky = (() => {
     save();
     render();
     strike();
+    const next = $("entry");
+    if (next) next.focus();
   }
   function wireMain() {
     const rec = $("record"), ent = $("entry");
@@ -2247,6 +2421,17 @@ var Rocky = (() => {
     };
     const d2 = $("demo2");
     if (d2) d2.onclick = loadDemo;
+    const ld = $("leaveDemo");
+    if (ld) ld.onclick = () => {
+      db.checkins = [];
+      db.people = [];
+      db.rules = [];
+      db.acked = {};
+      db.demo = false;
+      db.seen = true;
+      save();
+      render();
+    };
     const wi = $("whatIs");
     if (wi) wi.onclick = () => route("never");
     const of = $("openFocus");
@@ -2291,10 +2476,13 @@ var Rocky = (() => {
     const seeds = [8, 21, 34, 47, 60, 73, 86, 15, 41, 68, 92, 29];
     host2.innerHTML = seeds.map((s, i) => '<i style="left:' + s + "%;top:" + s * 7 % 90 + "%;animation-delay:" + (i * 2.1).toFixed(1) + 's"></i>').join("");
   }
+  var cameFrom = null;
   function openFocus() {
+    cameFrom = document.activeElement;
     $("focus").classList.remove("running");
     $("fcreature").hidden = true;
     $("focus").classList.add("open");
+    $("focus").setAttribute("aria-modal", "true");
     document.body.style.overflow = "hidden";
     $("fsetup").hidden = false;
     $("ftext").hidden = true;
@@ -2302,6 +2490,14 @@ var Rocky = (() => {
     $("ftext").value = "";
     fEndsAt = 0;
     fPaint();
+    $("fstart").focus();
+  }
+  function leaveFocus() {
+    if (fEndsAt && countWords($("ftext").value) > 0) {
+      fStop("Stopped early. Keep it or let it go.");
+      return;
+    }
+    closeFocus();
   }
   function closeFocus() {
     $("focus").classList.remove("running");
@@ -2311,10 +2507,15 @@ var Rocky = (() => {
     }
     fEndsAt = 0;
     $("focus").classList.remove("open");
+    $("focus").removeAttribute("aria-modal");
     document.body.style.overflow = "";
     render();
+    const back = cameFrom && cameFrom.id ? $(cameFrom.id) : null;
+    if (back) back.focus();
+    cameFrom = null;
   }
   function wireFocus() {
+    $("focus").addEventListener("keydown", (e) => trapTab($("focus"), e));
     $("durations").querySelectorAll("button").forEach((b) => b.onclick = () => {
       fMinutes = parseInt(b.dataset.min, 10);
       $("durations").querySelectorAll("button").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
@@ -2334,13 +2535,7 @@ var Rocky = (() => {
       }, 500);
     };
     $("ftext").addEventListener("input", fPaint);
-    $("fleave").onclick = () => {
-      if (fEndsAt && countWords($("ftext").value) > 0) {
-        fStop("Stopped early. Keep it or let it go.");
-        return;
-      }
-      closeFocus();
-    };
+    $("fleave").onclick = leaveFocus;
     $("fkeep").onclick = () => {
       const words = $("ftext").value.trim();
       if (words) {
@@ -2362,11 +2557,11 @@ var Rocky = (() => {
   function wireGlobal() {
     addEventListener("resize", paintScore);
     addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && $("focus").classList.contains("open")) closeFocus();
+      if (e.key === "Escape" && $("focus").classList.contains("open")) leaveFocus();
     });
     $("home").onclick = () => {
       if ($("focus").classList.contains("open")) {
-        closeFocus();
+        leaveFocus();
         return;
       }
       route("write");
@@ -2396,7 +2591,7 @@ var Rocky = (() => {
   registerWorker();
   return __toCommonJS(main_exports);
 })();
-var { db, save, ratio, due, met, describe, namedCount, hoursSinceNamed, usual, paintScore, phase, render, countWords, mmss, applyTheme, paintHistory, showPane, PANE_TITLES, rpc, session, project, paintPair, shareable, canStore, confirmOk, showPlace, route, PLACE_TITLES, canInstall } = Rocky;
+var { db, save, ratio, due, met, describe, namedCount, hoursSinceNamed, usual, paintScore, phase, render, countWords, mmss, applyTheme, paintHistory, showPane, PANE_TITLES, rpc, session, project, paintPair, shareable, canStore, confirmOk, showPlace, route, PLACE_TITLES, canInstall, nextFiring, gaps, openGap, normalisedEntropy, quantileAt, calibratedQuantile, notableAt, notable } = Rocky;
 </script>
 </body>
 </html>
